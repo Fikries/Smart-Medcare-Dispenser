@@ -49,8 +49,8 @@ if (
         //Content
         $mail->isHTML(true);                                  //Set email format to HTML
         $mail->Subject = 'Medical Submission';
-        $mail->Body    = 'Thank you for your submission';
-        $mail->AltBody = 'Thank you for your submission';
+        $mail->Body    = '<h3>'.$_POST['elder_name'].'</h3>Thank you for your submission. Here is your details submitted<br>Email: '.$_POST['elder_email'].'<br>Medicine name: '.$_POST['medicine_name'].'<br>Medicine type: '.$_POST['medicine_type'].'<br>Comsumption date: '.$_POST['consumption_date'].'<br>Comsumption time: '.$_POST['consumption_time'].'<br>Remark: '.$_POST['remark'];
+        $mail->AltBody = $_POST['elder_name'].' Thank you for your submission. Here is your details submitted. Email: '.$_POST['elder_email'].'. Medicine name: '.$_POST['medicine_name'].'. Medicine type: '.$_POST['medicine_type'].'. Comsumption date: '.$_POST['consumption_date'].'. Comsumption time: '.$_POST['consumption_time'].'. Remark: '.$_POST['remark'];
 
 
         $mail->send();

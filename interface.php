@@ -40,6 +40,23 @@ if (
     $tableHtml .= '</tbody></table>';
 
     $conn = new mysqli("localhost", "root", "", "project");
+
+    // Check if elder is registered
+    $checkSql = $conn->prepare("SELECT * FROM patient WHERE email = ?");
+    $checkSql->bind_param("s", $_POST['elder_email']);
+    $checkSql->execute();
+    $result = $checkSql->get_result();
+
+    if ($result->num_rows == 0) {
+    echo "<script>alert('Person is not registered yet'); window.location='register.php';</script>";
+    exit;
+    }
+
+    // If registered, proceed with the insertion of medicine information
+
+    //DELETE DATA YANG DAH ADA
+    $delete = $conn->prepare("DELETE FROM medicine");
+    $delete->execute();
     $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark) VALUES (NULL,?,?,?,?,?,?)");
     $sql->bind_param("ssssss", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark']);
     $sql->execute();
@@ -82,7 +99,7 @@ if (
         // echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
     }
 
-    echo "<script>alert('Insert successfully, and notification is sent through email')</script>";
+    echo "<script>alert('Insert successfully, and notification is sent through email'); window.location='monitoring.php';</script>";
 }
 ?>
 
@@ -171,17 +188,52 @@ if (
         td {
             background-color: #f2f2f2;
         }
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        .navbar a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .navbar a.active {
+            background-color: #04AA6D;
+            color: white;
+        }
     </style>
 </head>
 
 <body class="body">
-
+<div class="navbar">
+    <a href="register.php">Register</a>
+    <a href="list.php">List</a>
+    <a href="interface.php">Admin</a>
+    <a href="monitoring.php">Monitor</a>
+</div>
     <h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN
             NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
 
     <label class="font" for="rotation_time">Enter Rotation Time:</label>
-    <input type="datetime-local" id="rotation_time">
-    <button class="button" onclick="executeRotation()">Set Rotation Time</button>
+
+    <form id="timeForm">
+        <div id="timeInputs">
+            <input type="date" name="date[]" required>
+            <input type="time" name="time[]" required>
+        </div>
+        <button type="button" class="button" id="addTime">Add More</button>
+        <button type="button" class="button" id="saveTime">Set rotation time</button>
+    </form>
 
     <form action="" method="post">
         <input type="hidden" name="medicine" id="medicine">
@@ -201,6 +253,7 @@ if (
                     <th>Medicine Type</th>
                     <th>Date</th>
                     <th>Time</th>
+                    <th>update</th>
                 </tr>
             </thead>
             <tbody>
@@ -243,9 +296,25 @@ if (
         }
 
         function calculateDelay(targetDatetime1, targetDatetime2) {
+            // Get the current date
+            var currentDate = new Date(getCurrentDateTime());
+
+            // Time string
+            var timeString = targetDatetime2;
+
+            // Split the time string into hours and minutes
+            var timeParts = timeString.split(':');
+            var hours = parseInt(timeParts[0], 10);
+            var minutes = parseInt(timeParts[1], 10);
+
+            // Set the time on the current date
+            currentDate.setHours(hours);
+            currentDate.setMinutes(minutes);
+            currentDate.setSeconds(0);
+
             // Convert targetDatetime1 and targetDatetime2 to Date objects
             let targetDate1 = new Date(targetDatetime1);
-            let targetDate2 = new Date(targetDatetime2);
+            let targetDate2 = currentDate;
 
             if (targetDate1 > targetDate2) {
                 alert('Entered date time is less than current time');
@@ -259,14 +328,7 @@ if (
             return delayMilliseconds;
         }
 
-        function executeRotation() {
-            let targetDatetime1 = getCurrentDateTime();
-            let targetDatetime2 = document.getElementById("rotation_time").value;
-            let delayMilliseconds = calculateDelay(targetDatetime1, targetDatetime2);
-            if (isNaN(delayMilliseconds)) {
-                alert('Please enter datetime');
-                return;
-            }
+        function executeRotation(delayMilliseconds) {
             const xhttp = new XMLHttpRequest();
             xhttp.onload = function() {
                 alert("Request from ESP: " + this.responseText);
@@ -274,7 +336,6 @@ if (
             xhttp.open("GET", "http://192.168.147.145/index.html?delay=" + delayMilliseconds, true);
             xhttp.send();
             alert('Successfully scheduled');
-            console.log("Delay in milliseconds:", delayMilliseconds);
         }
 
         let medicineData = [];
@@ -292,6 +353,7 @@ if (
                 <td>${medicineType}</td>
                 <td>${date}</td>
                 <td>${time}</td>
+                <td><button onclick="cancelRow(this)">Cancel</button></td>
             `;
                 document.querySelector('#medicineTable tbody').appendChild(newRow);
 
@@ -308,6 +370,58 @@ if (
                 alert("Please enter Medicine Name, Medicine Type, Date, and Time.");
             }
         }
+        function cancelRow(button) {
+    // Get the row containing the cancel button
+    let row = button.parentNode.parentNode;
+    // Remove the row from the table
+    row.parentNode.removeChild(row);
+    // Remove the corresponding entry from the medicineData array
+    let index = Array.from(row.parentNode.children).indexOf(row);
+    medicineData.splice(index, 1);
+    // Update the hidden input field
+    document.getElementById("medicine").value = JSON.stringify(medicineData);
+}
+
+        //MULTIPLE ROTATION TIME FUNCTION
+        document.getElementById("addTime").addEventListener("click", function() {
+            var timeInputs = document.getElementById("timeInputs");
+            var newInput = document.createElement("input");
+            newInput.type = "time";
+            newInput.name = "time[]";
+            timeInputs.appendChild(newInput);
+        });
+
+        document.getElementById("saveTime").addEventListener("click", function() {
+            var delayArray = "";
+            var timeInputs = document.getElementsByName("time[]");
+            for (var i = 0; i < timeInputs.length; i++) {
+                if (timeInputs[i].value == '') {
+                    alert('Please complete all time input');
+                    delayArray = "";
+                    return;
+                }
+                let delayMilliseconds = calculateDelay(getCurrentDateTime(), timeInputs[i].value);
+                delayArray = delayArray + "," + delayMilliseconds;
+            }
+            console.log("Before rebuilt:");
+            var sliceddelay = delayArray.slice(1);
+            console.log(sliceddelay);
+            // Step 1: Split the string into individual values
+            var values = sliceddelay.split(",").map(Number);
+
+            // Step 2: Calculate differences between consecutive values
+            var differences = [];
+            for (var i = 0; i < values.length; i++) {
+                var diff = values[i] - (values[i - 1] || 0);
+                differences.push(diff);
+            }
+
+            // Step 3: Rebuild the comma-separated list with recalculated values
+            var rebuiltString = differences.join(",");
+            console.log("After rebuilt:");
+            console.log(rebuiltString);
+            executeRotation(rebuiltString);
+        });
     </script>
 
 </body>

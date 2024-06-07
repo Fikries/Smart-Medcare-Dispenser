@@ -18,15 +18,30 @@ require 'vendor/autoload.php';
 if (
     isset($_POST['elder_name']) &&
     isset($_POST['elder_email']) &&
-    isset($_POST['medicine_name']) &&
-    isset($_POST['medicine_type']) &&
+    isset($_POST['medicine']) &&
     isset($_POST['consumption_date']) &&
     isset($_POST['consumption_time']) &&
     isset($_POST['remark'])
 ) {
+    $medicineData = json_decode($_POST['medicine'], true);
+    $tableHtml = '<table>';
+    $tableHtml .= '<thead><tr><th>Medicine Name</th><th>Medicine Type</th><th>Date</th><th>Time</th></tr></thead>';
+    $tableHtml .= '<tbody>';
+
+    foreach ($medicineData as $medicine) {
+        $tableHtml .= '<tr>';
+        $tableHtml .= '<td>' . $medicine['name'] . '</td>';
+        $tableHtml .= '<td>' . $medicine['type'] . '</td>';
+        $tableHtml .= '<td>' . $medicine['date'] . '</td>';
+        $tableHtml .= '<td>' . $medicine['time'] . '</td>';
+        $tableHtml .= '</tr>';
+    }
+
+    $tableHtml .= '</tbody></table>';
+
     $conn = new mysqli("localhost", "root", "", "project");
-    $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicinename, medicinetype, consumptiondate, consumptiontime, remark) VALUES (NULL,?,?,?,?,?,?,?)");
-    $sql->bind_param("sssssss", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine_name'], $_POST['medicine_type'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark']);
+    $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark) VALUES (NULL,?,?,?,?,?,?)");
+    $sql->bind_param("ssssss", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark']);
     $sql->execute();
     $mail = new PHPMailer(true);
     try {
@@ -49,8 +64,16 @@ if (
         //Content
         $mail->isHTML(true);                                  //Set email format to HTML
         $mail->Subject = 'Medical Submission';
-        $mail->Body    = '<h3>'.$_POST['elder_name'].'</h3>Thank you for your submission. Here is your details submitted<br>Email: '.$_POST['elder_email'].'<br>Medicine name: '.$_POST['medicine_name'].'<br>Medicine type: '.$_POST['medicine_type'].'<br>Comsumption date: '.$_POST['consumption_date'].'<br>Comsumption time: '.$_POST['consumption_time'].'<br>Remark: '.$_POST['remark'];
-        $mail->AltBody = $_POST['elder_name'].' Thank you for your submission. Here is your details submitted. Email: '.$_POST['elder_email'].'. Medicine name: '.$_POST['medicine_name'].'. Medicine type: '.$_POST['medicine_type'].'. Comsumption date: '.$_POST['consumption_date'].'. Comsumption time: '.$_POST['consumption_time'].'. Remark: '.$_POST['remark'];
+        $mail->Body = '<h3>' . $_POST['elder_name'] . '</h3>Thank you for your submission. Here are the details submitted:<br>' .
+            'Email: ' . $_POST['elder_email'] . '<br>' .
+            'Medicine details:<br>' . $tableHtml . '<br>' .
+            'Consumption date: ' . $_POST['consumption_date'] . '<br>' .
+            'Consumption time: ' . $_POST['consumption_time'] . '<br>' .
+            'Remark: ' . $_POST['remark'];
+
+        $mail->AltBody = $_POST['elder_name'] . ' Thank you for your submission. Here are the details submitted. ' .
+            'Email: ' . $_POST['elder_email'] . '. Medicine details: ' . $_POST['medicine'] . '. Consumption date: ' . $_POST['consumption_date'] .
+            '. Consumption time: ' . $_POST['consumption_time'] . '. Remark: ' . $_POST['remark'];
 
 
         $mail->send();
@@ -67,7 +90,7 @@ if (
 <html>
 
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -127,6 +150,27 @@ if (
             height: 100px;
             /* Adjust height as needed */
         }
+
+        table {
+            width: 500px;
+            border-collapse: collapse;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        td {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 
@@ -140,6 +184,7 @@ if (
     <button class="button" onclick="executeRotation()">Set Rotation Time</button>
 
     <form action="" method="post">
+        <input type="hidden" name="medicine" id="medicine">
         <h2><span class="highlighted">Elder Information</h2></span>
         <label class="font" for="elder_name">Elder Name:</label>
         <input type="text" id="elder_name" name="elder_name" required>
@@ -149,13 +194,21 @@ if (
         <input type="text" id="elder_email" name="elder_email" required>
         <br><br>
 
-        <label class="font" for="medicine_name">Medicine Name:</label>
-        <input type="text" id="medicine_name" name="medicine_name" required>
-        <br><br>
-
-        <label class="font" for="medicine_type">Medicine Type:</label>
-        <input type="text" id="medicine_type" name="medicine_type" required>
-        <br><br>
+        <table id="medicineTable">
+            <thead>
+                <tr>
+                    <th>Medicine Name</th>
+                    <th>Medicine Type</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically added here -->
+            </tbody>
+        </table>
+        <br>
+        <button class="button" onclick="addRow()">Add Medicine</button><br><br>
 
         <label class="font" for="consumption_date">Consumption Date:</label>
         <input type="date" id="consumption_date" name="consumption_date" required>
@@ -222,6 +275,38 @@ if (
             xhttp.send();
             alert('Successfully scheduled');
             console.log("Delay in milliseconds:", delayMilliseconds);
+        }
+
+        let medicineData = [];
+
+        function addRow() {
+            let medicineName = prompt("Enter Medicine Name:");
+            let medicineType = prompt("Enter Medicine Type:");
+            let date = prompt("Enter Date:");
+            let time = prompt("Enter Time:");
+
+            if (medicineName && medicineType && date && time) {
+                let newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                <td>${medicineName}</td>
+                <td>${medicineType}</td>
+                <td>${date}</td>
+                <td>${time}</td>
+            `;
+                document.querySelector('#medicineTable tbody').appendChild(newRow);
+
+                // Store data in JavaScript variable as JSON
+                medicineData.push({
+                    name: medicineName,
+                    type: medicineType,
+                    date: date,
+                    time: time
+                });
+
+                document.getElementById("medicine").value = JSON.stringify(medicineData);
+            } else {
+                alert("Please enter Medicine Name, Medicine Type, Date, and Time.");
+            }
         }
     </script>
 

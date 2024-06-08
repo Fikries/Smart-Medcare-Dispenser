@@ -112,7 +112,7 @@
 <body class="body">
 <div class="navbar">
     <a href="register.php">Register</a>
-    <a href="list.php">List</a>
+    <a href="list.php">Record</a>
     <a href="interface.php">Admin</a>
     <a href="monitoring.php">Monitor</a>
 </div>
@@ -178,5 +178,4 @@
         setTimeout(refresh, 5000);
     </script>
 </body>
-
 </html>

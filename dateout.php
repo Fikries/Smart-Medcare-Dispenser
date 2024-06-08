@@ -182,7 +182,7 @@ $total_records = mysqli_fetch_array($count_result)[0];
 $total_pages = ceil($total_records / $records_per_page);
 
 // Query to fetch filtered resident data with pagination
-$query = "SELECT id, name, email, address, datein, timein, illness FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
+$query = "SELECT id, name, email, address, dateout, timeout, notes FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
 $result = mysqli_query($connect, $query);
 
 if ($result) {
@@ -194,9 +194,9 @@ if ($result) {
         <td><b>Elder Name</b></td>
         <td><b>Email</b></td>
         <td><b>Address</b></td>
-        <td><b>Date In</b></td>
-        <td><b>Time In</b></td>
-        <td><b>Illness</b></td>
+        <td><b>Date Out</b></td>
+        <td><b>Time Out</b></td>
+        <td><b>Notes</b></td>
     </tr>';
 
     while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
@@ -205,9 +205,9 @@ if ($result) {
         <td class="editable-cell" data-field="name" data-id="' . $row['id'] . '">' . $row['name'] . '</td>
         <td class="editable-cell" data-field="email" data-id="' . $row['id'] . '">' . $row['email'] . '</td>
         <td class="editable-cell" data-field="address" data-id="' . $row['id'] . '">' . $row['address'] . '</td>
-        <td class="editable-cell editable-date" data-field="datein" data-id="' . $row['id'] . '">' . $row['datein'] . '</td>
-        <td class="editable-cell editable-time" data-field="timein" data-id="' . $row['id'] . '">' . $row['timein'] . '</td>
-        <td class="editable-cell" data-field="illness" data-id="' . $row['id'] . '">' . $row['illness'] . '</td>
+        <td class="editable-cell editable-date" data-field="dateout" data-id="' . $row['id'] . '">' . $row['dateout'] . '</td>
+        <td class="editable-cell editable-time" data-field="timeout" data-id="' . $row['id'] . '">' . $row['timeout'] . '</td>
+        <td class="editable-cell" data-field="notes" data-id="' . $row['id'] . '">' . $row['notes'] . '</td>
         </tr>';
     }
 

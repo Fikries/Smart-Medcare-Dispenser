@@ -1,4 +1,8 @@
 <?php
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 // Start session
 session_start();
 
@@ -10,27 +14,72 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
     echo '</form>';
 }
 
+require 'vendor/autoload.php';
+
 if (
     isset($_POST['name']) &&
     isset($_POST['email']) &&
     isset($_POST['address']) &&
     isset($_POST['date_in']) &&
+    isset($_POST['time_in']) &&
     isset($_POST['illness']) // Check if the payment status is set
 ) {
     // Establish connection to the database
     $conn = new mysqli("localhost", "root", "", "project");
 
     // Prepare SQL statement to insert data into the database
-    $sql = $conn->prepare("INSERT INTO patient (id, name, email, address, datein,  illness) VALUES (NULL, ?, ?, ?, ?, ?)");
+    $sql = $conn->prepare("INSERT INTO patient (id, name, email, address, datein, timein,  illness) VALUES (NULL, ?, ?, ?, ?, ?, ?)");
 
     // Bind parameters to the prepared statement
-    $sql->bind_param("sssss", $_POST['name'], $_POST['email'], $_POST['address'], $_POST['date_in'], $_POST['illness']);
+    $sql->bind_param("ssssss", $_POST['name'], $_POST['email'], $_POST['address'], $_POST['date_in'], $_POST['time_in'], $_POST['illness']);
 
     // Execute the prepared statement
     $sql->execute();
 
-    // Notify the user that insertion was successful
-    echo "<script>alert('Insert successfully')</script>";
+    '</tbody></table>';
+    $mail = new PHPMailer(true);
+    try {
+        $receiveremail = $_POST['email'];
+        $receivername = $_POST['name'];
+        //Server settings
+        // $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      //Enable verbose debug output
+        $mail->isSMTP();                                            //Send using SMTP
+        $mail->Host       = 'smtp.gmail.com';                     //Set the SMTP server to send through
+        $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
+        $mail->Username   = 'fikries184@gmail.com';                     //SMTP username
+        $mail->Password   = 'xorbcraxrcpbmang';                               //SMTP password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
+        $mail->Port       = 465;                                    //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
+
+        //Recipients
+        $mail->setFrom('fikries184@gmail.com', 'Fikri Medical');
+        $mail->addAddress($receiveremail, $receivername);     //Add a recipient
+
+        //Content
+        $mail->isHTML(true);                                  //Set email format to HTML
+        $mail->Subject = 'Registration';
+        $mail->Body = '<html><body style="font-family: \'Times New Roman\', Times, serif;">
+        Your registration is successful. Here are the details submitted:</body></html>' . '<br><br>' . 
+            'Name:' . $_POST['name'] . '<br>' .
+            'Email: ' . $_POST['email'] . '<br>' .
+            'Address: ' . $_POST['address'] . '<br>' .
+            'Date In: ' . $_POST['date_in'] . '<br>' .
+            'Time In: ' . $_POST['time_in'] . '<br>' .
+            'Illness: ' . $_POST['illness'] . '<br><br>' .
+            'Thank you.';
+
+        $mail->AltBody = $_POST['name'] . ' Thank you for your registration. Here are the details submitted. ' .
+            'Email: ' . $_POST['email'] . '. Address: ' . $_POST['address'] .
+            '. Date In: ' . $_POST['date_in'] . '. Illness: ' . $_POST['illness'];
+
+
+        $mail->send();
+        // echo 'Message has been sent';
+    } catch (Exception $e) {
+        // echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    }
+
+    echo "<script>alert('Insert successfully, and notification is sent through email'); window.location='list.php';</script>";
 }
 ?>
 
@@ -142,7 +191,7 @@ if (
 <body>
 <div class="navbar">
     <a href="register.php">Register</a>
-    <a href="list.php">List</a>
+    <a href="list.php">Record</a>
     <a href="interface.php">Admin</a>
     <a href="monitoring.php">Monitor</a>
 </div>
@@ -162,8 +211,12 @@ if (
         <input type="text" id="address" name="address" required>
         <br><br>
 
-        <label class="font" for="date_in">Time In Date:</label>
+        <label class="font" for="date_in">Date In:</label>
         <input type="date" id="date_in" name="date_in" required>
+        <br><br>
+
+        <label class="font" for="time_in">Time In:</label>
+        <input type="time" id="time_in" name="time_in" required>
         <br><br>
 
         <label class="font" for="illness">Illness:</label>

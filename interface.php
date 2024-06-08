@@ -48,7 +48,7 @@ if (
     $result = $checkSql->get_result();
 
     if ($result->num_rows == 0) {
-    echo "<script>alert('Person is not registered yet'); window.location='register.php';</script>";
+    echo "<script>alert('Person is not registered yet, Please register.'); window.location='register.php';</script>";
     exit;
     }
 
@@ -114,6 +114,7 @@ if (
     <title>Medicine Dispenser</title>
     <style>
         body {
+            font-family: Arial;
             background-image: url('asset/background.jpg');
             /* Specify the path to your image */
             background-size: cover;
@@ -124,6 +125,26 @@ if (
             /* Do not repeat the background image */
             color: rgb(9, 67, 4);
 
+        }
+
+        .split {
+        height: 100%;
+        width: 50%;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        overflow-x: hidden;
+        padding-top: 20px;
+        }
+
+        .left {
+        left: 0;
+        background-image: url('asset/left.jpg');
+        }
+
+        .right {
+        right: 0;
+        background-image: url('asset/right.jpg');
         }
 
         .button {
@@ -211,13 +232,61 @@ if (
             background-color: #04AA6D;
             color: white;
         }
+        .table-container {
+            width: 100%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        .table-container th, .table-container td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .table-container th {
+            background-color: #f2f2f2;
+        }
+
+        .table-container tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .table-container tr:hover {
+            background-color: #ddd;
+        }
+        /* Style for pagination links */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .pagination a {
+            color: black;
+            padding: 8px 16px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            margin: 0 2px;
+        }
+
+        .pagination a.active {
+            background-color: #04AA6D;
+            color: white;
+            border: 1px solid #04AA6D;
+        }
+
+        .pagination a:hover:not(.active) {
+            background-color: #ddd;
+        }
     </style>
 </head>
 
 <body class="body">
+<div class="split left">
 <div class="navbar">
     <a href="register.php">Register</a>
-    <a href="list.php">List</a>
+    <a href="list.php">Record</a>
     <a href="interface.php">Admin</a>
     <a href="monitoring.php">Monitor</a>
 </div>
@@ -253,7 +322,6 @@ if (
                     <th>Medicine Type</th>
                     <th>Date</th>
                     <th>Time</th>
-                    <th>update</th>
                 </tr>
             </thead>
             <tbody>
@@ -272,12 +340,133 @@ if (
         <br><br>
 
         <label class="font" for="remark">Remarks:</label>
-        <textarea id="remark" name="remark" rows="4" cols="50" required></textarea>
+        <textarea id="remark" name="remark" rows="4" cols="50" placeholder="Optional"></textarea>
         <br><br>
 
         <button class="button" type="submit">Submit Medicine Info</button>
     </form>
+</div>
+<div class="split right">
+<?php
+// Establish connection to the database
+$connect = mysqli_connect("localhost", "root", "", "project");
 
+// Check the connection
+if (mysqli_connect_errno()) {
+    die("Failed to connect to MySQL: " . mysqli_connect_error());
+}
+
+// Check if form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $searchName = mysqli_real_escape_string($connect, $_POST['name']);
+} else {
+    $searchName = '';
+}
+
+// Pagination logic
+$records_per_page = 10; // Number of records to display per page
+$current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+$offset = ($current_page - 1) * $records_per_page;
+
+// Query to count total records
+$count_query = "SELECT COUNT(*) FROM patient WHERE name LIKE '%$searchName%'";
+$count_result = mysqli_query($connect, $count_query);
+$total_records = mysqli_fetch_array($count_result)[0];
+$total_pages = ceil($total_records / $records_per_page);
+
+// Query to fetch filtered resident data with pagination
+$query = "SELECT id, name, email, illness FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
+$result = mysqli_query($connect, $query);
+
+if ($result) {
+    echo '<div class="table-container">';
+    echo '<div align="center">';
+    echo '<table border="2">
+    <tr>
+        <td><b>Resident ID</b></td>
+        <td><b>Elder Name</b></td>
+        <td><b>Email</b></td>
+        <td><b>Illness</b></td>
+    </tr>';
+
+    while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+        echo '<tr>
+        <td>' . $row['id'] . '</td>
+        <td>' . $row['name'] . '</td>
+        <td>' . $row['email'] . '</td>
+        <td>' . $row['illness'] . '</td>
+        </tr>';
+    }
+
+    echo '</table>';
+    echo '</div>';
+    echo '</div>';
+
+    // Pagination links
+    echo '<div class="pagination">';
+    for ($page = 1; $page <= $total_pages; $page++) {
+        echo '<a href="?page=' . $page . '"';
+        if ($page == $current_page) {
+            echo ' class="active"';
+        }
+        echo '>' . $page . '</a> ';
+    }
+    echo '</div>';
+} else {
+    echo "Error: " . mysqli_error($connect);
+}
+
+// Close the database connection
+mysqli_close($connect);
+?>
+
+<!-- JavaScript for making table cells editable on double-click -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cells = document.querySelectorAll('.editable-cell');
+
+        cells.forEach(cell => {
+            cell.addEventListener('dblclick', () => {
+                const text = cell.innerText.trim();
+                let inputType = 'text';
+                if (cell.classList.contains('editable-date')) {
+                    inputType = 'date';
+                } else if (cell.classList.contains('editable-time')) {
+                    inputType = 'time';
+                }
+                cell.innerHTML = `<input type="${inputType}" class="editable-input" value="${text}">`;
+                const input = cell.querySelector('.editable-input');
+                input.focus();
+
+                input.addEventListener('blur', () => {
+                    const newValue = input.value.trim();
+                    const field = cell.getAttribute('data-field');
+                    const id = cell.getAttribute('data-id');
+
+                    // Update the database with the new value
+                    updateCellValue(field, id, newValue);
+
+                    cell.innerHTML = newValue;
+                });
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        input.blur();
+                    }
+                });
+            });
+        });
+
+        // Function to update cell value in the database via AJAX
+        function updateCellValue(field, id, value) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'update_cell.php', true);
+            xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+            xhr.send(`field=${field}&id=${id}&value=${encodeURIComponent(value)}`);
+        }
+    });
+</script>
+</div>
     <script>
         function getCurrentDateTime() {
             // Get the current datetime
@@ -353,7 +542,6 @@ if (
                 <td>${medicineType}</td>
                 <td>${date}</td>
                 <td>${time}</td>
-                <td><button onclick="cancelRow(this)">Cancel</button></td>
             `;
                 document.querySelector('#medicineTable tbody').appendChild(newRow);
 
@@ -370,17 +558,43 @@ if (
                 alert("Please enter Medicine Name, Medicine Type, Date, and Time.");
             }
         }
-        function cancelRow(button) {
-    // Get the row containing the cancel button
-    let row = button.parentNode.parentNode;
-    // Remove the row from the table
-    row.parentNode.removeChild(row);
-    // Remove the corresponding entry from the medicineData array
-    let index = Array.from(row.parentNode.children).indexOf(row);
-    medicineData.splice(index, 1);
-    // Update the hidden input field
-    document.getElementById("medicine").value = JSON.stringify(medicineData);
-}
+        function updateHiddenField() {
+            var table = document.getElementById("medicineTable");
+            var medicineArray = [];
+
+            for (var i = 1, row; row = table.rows[i]; i++) {
+                var medicineName = row.cells[0].innerHTML;
+                var medicineType = row.cells[1].innerHTML;
+                var consumptionDate = row.cells[2].innerHTML;
+                var consumptionTime = row.cells[3].innerHTML;
+
+                medicineArray.push({
+                    name: medicineName,
+                    type: medicineType,
+                    date: consumptionDate,
+                    time: consumptionTime
+                });
+            }
+
+            document.getElementById("medicine").value = JSON.stringify(medicineArray);
+        }
+
+        // Function to handle table cell double-click for editing
+        document.getElementById('medicineTable').addEventListener('dblclick', function(e) {
+            if (e.target.tagName === 'TD') {
+                let currentValue = e.target.innerHTML;
+                let input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentValue;
+                input.onblur = function() {
+                    e.target.innerHTML = input.value;
+                    updateHiddenField();  // Update hidden field when editing is complete
+                };
+                e.target.innerHTML = '';
+                e.target.appendChild(input);
+                input.focus();
+            }
+        });
 
         //MULTIPLE ROTATION TIME FUNCTION
         document.getElementById("addTime").addEventListener("click", function() {

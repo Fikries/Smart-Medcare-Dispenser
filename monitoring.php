@@ -122,7 +122,7 @@
 
 
     <?php
-    $conn = new mysqli("localhost", "root", "", "project");
+    $conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
     $elder = $conn->prepare("SELECT `id`, `eldername`, `email`, `medicine`, `consumptiondate`, `consumptiontime`, `caretakeremail`, `remark` FROM `medicine`");
     $elder->execute();
     $elder->store_result();

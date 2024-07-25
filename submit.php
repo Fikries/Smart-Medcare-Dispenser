@@ -11,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $remark = $_POST['remark'];
 
     // Database connection
-    $conn = new mysqli("localhost", "root", "", "project");
+    $conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
 
     // Check connection
     if ($conn->connect_error) {

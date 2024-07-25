@@ -156,7 +156,7 @@
 
 <?php
 // Establish connection to the database
-$connect = mysqli_connect("localhost", "root", "", "project");
+$connect = mysqli_connect("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
 
 // Check the connection
 if (mysqli_connect_errno()) {

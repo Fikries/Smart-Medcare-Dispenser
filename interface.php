@@ -1,11 +1,15 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 // Start session
 session_start();
-
+$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
 // Check if the admin is logged in
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
     // Display logout button
@@ -39,8 +43,6 @@ if (
 
     $tableHtml .= '</tbody></table>';
 
-    $conn = new mysqli("localhost", "root", "", "project");
-
     // Check if elder is registered
     $checkSql = $conn->prepare("SELECT * FROM patient WHERE email = ?");
     $checkSql->bind_param("s", $_POST['elder_email']);
@@ -48,8 +50,8 @@ if (
     $result = $checkSql->get_result();
 
     if ($result->num_rows == 0) {
-    echo "<script>alert('Person is not registered yet, Please register.'); window.location='register.php';</script>";
-    exit;
+        echo "<script>alert('Person is not registered yet, Please register.'); window.location='register.php';</script>";
+        exit;
     }
 
     // If registered, proceed with the insertion of medicine information
@@ -57,8 +59,9 @@ if (
     //DELETE DATA YANG DAH ADA
     $delete = $conn->prepare("DELETE FROM medicine");
     $delete->execute();
-    $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark) VALUES (NULL,?,?,?,?,?,?)");
-    $sql->bind_param("ssssss", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark']);
+    $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark, caretakeremail) VALUES (NULL,?,?,?,?,?,?,?)");
+    $sql->bind_param("ssssssi", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark'], $caretakeremail);
+    $caretakeremail = 0;
     $sql->execute();
     $mail = new PHPMailer(true);
     try {
@@ -101,6 +104,16 @@ if (
 
     echo "<script>alert('Insert successfully, and notification is sent through email'); window.location='monitoring.php';</script>";
 }
+
+if (isset($_POST['daterotatenew'])) {
+    $addmotorspinsql = $conn->prepare("INSERT INTO `motorspin`(`id`, `datetime`, `spinstate`) VALUES (NULL,?,?)");
+    $addmotorspinsql->bind_param("ss", $datetimenew, $spinstate);
+    $dateformatnew = new DateTime($_POST['daterotatenew']);
+    $datetimenew = $dateformatnew->format("Y-m-d H:i:s");
+    $spinstate = "false";
+    $addmotorspinsql->execute();
+    echo "<script>alert('Insert successfully'); window.location='interface.php';</script>";
+}
 ?>
 
 <!DOCTYPE html>
@@ -128,23 +141,23 @@ if (
         }
 
         .split {
-        height: 100%;
-        width: 50%;
-        position: fixed;
-        z-index: 1;
-        top: 0;
-        overflow-x: hidden;
-        padding-top: 20px;
+            height: 100%;
+            width: 50%;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            overflow-x: hidden;
+            padding-top: 20px;
         }
 
         .left {
-        left: 0;
-        background-image: url('asset/left.jpg');
+            left: 0;
+            background-image: url('asset/left.jpg');
         }
 
         .right {
-        right: 0;
-        background-image: url('asset/right.jpg');
+            right: 0;
+            background-image: url('asset/right.jpg');
         }
 
         .button {
@@ -209,6 +222,7 @@ if (
         td {
             background-color: #f2f2f2;
         }
+
         .navbar {
             overflow: hidden;
             background-color: #333;
@@ -232,13 +246,15 @@ if (
             background-color: #04AA6D;
             color: white;
         }
+
         .table-container {
             width: 100%;
             margin: 20px auto;
             border-collapse: collapse;
         }
 
-        .table-container th, .table-container td {
+        .table-container th,
+        .table-container td {
             padding: 8px;
             border: 1px solid #ddd;
             text-align: left;
@@ -255,6 +271,7 @@ if (
         .table-container tr:hover {
             background-color: #ddd;
         }
+
         /* Style for pagination links */
         .pagination {
             display: flex;
@@ -283,105 +300,131 @@ if (
 </head>
 
 <body class="body">
-<div class="split left">
-<div class="navbar">
-    <a href="register.php">Register</a>
-    <a href="list.php">Record</a>
-    <a href="interface.php">Admin</a>
-    <a href="monitoring.php">Monitor</a>
-</div>
-    <h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN
-            NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
-
-    <label class="font" for="rotation_time">Enter Rotation Time:</label>
-
-    <form id="timeForm">
-        <div id="timeInputs">
-            <input type="date" name="date[]" required>
-            <input type="time" name="time[]" required>
+    <div class="split left">
+        <div class="navbar">
+            <a href="register.php">Register</a>
+            <a href="list.php">Record</a>
+            <a href="interface.php">Admin</a>
+            <a href="monitoring.php">Monitor</a>
         </div>
-        <button type="button" class="button" id="addTime">Add More</button>
-        <button type="button" class="button" id="saveTime">Set rotation time</button>
-    </form>
+        <h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN
+                NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
 
-    <form action="" method="post">
-        <input type="hidden" name="medicine" id="medicine">
-        <h2><span class="highlighted">Elder Information</h2></span>
-        <label class="font" for="elder_name">Elder Name:</label>
-        <input type="text" id="elder_name" name="elder_name" required>
-        <br><br>
+        <label class="font" for="rotation_time">Setup rotation time:</label>
 
-        <label class="font" for="elder_email">Elder email:</label>
-        <input type="text" id="elder_email" name="elder_email" required>
-        <br><br>
-
+        <form id="timeForm" method="POST">
+            <div id="timeInputs">
+                <input type="datetime-local" name="daterotatenew" required>
+            </div>
+            <button type="submit" class="button" id="saveTime">Add rotation time</button>
+        </form>
         <table id="medicineTable">
             <thead>
                 <tr>
-                    <th>Medicine Name</th>
-                    <th>Medicine Type</th>
-                    <th>Date</th>
-                    <th>Time</th>
+                    <th>ID</th>
+                    <th>Rotation Datetime</th>
+                    <th>Rotated status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Rows will be dynamically added here -->
+                <?php
+                $displaymotorspinsql = $conn->prepare("SELECT `id`, `datetime`, `spinstate` FROM `motorspin`");
+                $displaymotorspinsql->execute();
+                $displaymotorspinsql->store_result();
+                $displaymotorspinsql->bind_result($idmotor, $datetimespinmotor, $statespinmotor);
+                while ($displaymotorspinsql->fetch()) {
+                ?>
+                    <tr>
+                        <td><?php echo $idmotor ?></td>
+                        <td><?php echo $datetimespinmotor ?></td>
+                        <td><?php echo $statespinmotor ?></td>
+                        <td><a href="editmotor.php?id=<?php echo $idmotor ?>">Edit</a> <a onclick="return confirm('Are you sure want to delete this motor spin schedule?')" href="deletemotor.php?id=<?php echo $idmotor ?>">Delete</a></td>
+                    </tr>
+                <?php } ?>
             </tbody>
         </table>
-        <br>
-        <button class="button" onclick="addRow()">Add Medicine</button><br><br>
 
-        <label class="font" for="consumption_date">Consumption Date:</label>
-        <input type="date" id="consumption_date" name="consumption_date" required>
-        <br><br>
+        <button type="button" class="button" onclick="MyWindow=window.open('spinworker.php','MyWindow','width=600,height=300'); return false;">Start spin worker</button>
 
-        <label class="font" for="consumption_time">Consumption Time:</label>
-        <input type="time" id="consumption_time" name="consumption_time" required>
-        <br><br>
+        <form action="" method="post">
+            <input type="hidden" name="medicine" id="medicine">
+            <h2><span class="highlighted">Elder Information</h2></span>
+            <label class="font" for="elder_name">Elder Name:</label>
+            <input type="text" id="elder_name" name="elder_name" required>
+            <br><br>
 
-        <label class="font" for="remark">Remarks:</label>
-        <textarea id="remark" name="remark" rows="4" cols="50" placeholder="Optional"></textarea>
-        <br><br>
+            <label class="font" for="elder_email">Elder email:</label>
+            <input type="text" id="elder_email" name="elder_email" required>
+            <br><br>
 
-        <button class="button" type="submit">Submit Medicine Info</button>
-    </form>
-</div>
-<div class="split right">
-<?php
-// Establish connection to the database
-$connect = mysqli_connect("localhost", "root", "", "project");
+            <table id="medicineTable">
+                <thead>
+                    <tr>
+                        <th>Medicine Name</th>
+                        <th>Medicine Type</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be dynamically added here -->
+                </tbody>
+            </table>
+            <br>
+            <button class="button" onclick="addRow()">Add Medicine</button><br><br>
 
-// Check the connection
-if (mysqli_connect_errno()) {
-    die("Failed to connect to MySQL: " . mysqli_connect_error());
-}
+            <label class="font" for="consumption_date">Consumption Date:</label>
+            <input type="date" id="consumption_date" name="consumption_date" required>
+            <br><br>
 
-// Check if form is submitted
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $searchName = mysqli_real_escape_string($connect, $_POST['name']);
-} else {
-    $searchName = '';
-}
+            <label class="font" for="consumption_time">Consumption Time:</label>
+            <input type="time" id="consumption_time" name="consumption_time" required>
+            <br><br>
 
-// Pagination logic
-$records_per_page = 10; // Number of records to display per page
-$current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-$offset = ($current_page - 1) * $records_per_page;
+            <label class="font" for="remark">Remarks:</label>
+            <textarea id="remark" name="remark" rows="4" cols="50" placeholder="Optional"></textarea>
+            <br><br>
 
-// Query to count total records
-$count_query = "SELECT COUNT(*) FROM patient WHERE name LIKE '%$searchName%'";
-$count_result = mysqli_query($connect, $count_query);
-$total_records = mysqli_fetch_array($count_result)[0];
-$total_pages = ceil($total_records / $records_per_page);
+            <button class="button" type="submit">Submit Medicine Info</button>
+        </form>
+    </div>
+    <div class="split right">
+        <?php
+        // Establish connection to the database
+        $connect = mysqli_connect("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
 
-// Query to fetch filtered resident data with pagination
-$query = "SELECT id, name, email, illness FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
-$result = mysqli_query($connect, $query);
+        // Check the connection
+        if (mysqli_connect_errno()) {
+            die("Failed to connect to MySQL: " . mysqli_connect_error());
+        }
 
-if ($result) {
-    echo '<div class="table-container">';
-    echo '<div align="center">';
-    echo '<table border="2">
+        // Check if form is submitted
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $searchName = mysqli_real_escape_string($connect, $_POST['name']);
+        } else {
+            $searchName = '';
+        }
+
+        // Pagination logic
+        $records_per_page = 10; // Number of records to display per page
+        $current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+        $offset = ($current_page - 1) * $records_per_page;
+
+        // Query to count total records
+        $count_query = "SELECT COUNT(*) FROM patient WHERE name LIKE '%$searchName%'";
+        $count_result = mysqli_query($connect, $count_query);
+        $total_records = mysqli_fetch_array($count_result)[0];
+        $total_pages = ceil($total_records / $records_per_page);
+
+        // Query to fetch filtered resident data with pagination
+        $query = "SELECT id, name, email, illness FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
+        $result = mysqli_query($connect, $query);
+
+        if ($result) {
+            echo '<div class="table-container">';
+            echo '<div align="center">';
+            echo '<table border="2">
     <tr>
         <td><b>Resident ID</b></td>
         <td><b>Elder Name</b></td>
@@ -389,84 +432,84 @@ if ($result) {
         <td><b>Illness</b></td>
     </tr>';
 
-    while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
-        echo '<tr>
+            while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+                echo '<tr>
         <td>' . $row['id'] . '</td>
         <td>' . $row['name'] . '</td>
         <td>' . $row['email'] . '</td>
         <td>' . $row['illness'] . '</td>
         </tr>';
-    }
+            }
 
-    echo '</table>';
-    echo '</div>';
-    echo '</div>';
+            echo '</table>';
+            echo '</div>';
+            echo '</div>';
 
-    // Pagination links
-    echo '<div class="pagination">';
-    for ($page = 1; $page <= $total_pages; $page++) {
-        echo '<a href="?page=' . $page . '"';
-        if ($page == $current_page) {
-            echo ' class="active"';
-        }
-        echo '>' . $page . '</a> ';
-    }
-    echo '</div>';
-} else {
-    echo "Error: " . mysqli_error($connect);
-}
-
-// Close the database connection
-mysqli_close($connect);
-?>
-
-<!-- JavaScript for making table cells editable on double-click -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const cells = document.querySelectorAll('.editable-cell');
-
-        cells.forEach(cell => {
-            cell.addEventListener('dblclick', () => {
-                const text = cell.innerText.trim();
-                let inputType = 'text';
-                if (cell.classList.contains('editable-date')) {
-                    inputType = 'date';
-                } else if (cell.classList.contains('editable-time')) {
-                    inputType = 'time';
+            // Pagination links
+            echo '<div class="pagination">';
+            for ($page = 1; $page <= $total_pages; $page++) {
+                echo '<a href="?page=' . $page . '"';
+                if ($page == $current_page) {
+                    echo ' class="active"';
                 }
-                cell.innerHTML = `<input type="${inputType}" class="editable-input" value="${text}">`;
-                const input = cell.querySelector('.editable-input');
-                input.focus();
-
-                input.addEventListener('blur', () => {
-                    const newValue = input.value.trim();
-                    const field = cell.getAttribute('data-field');
-                    const id = cell.getAttribute('data-id');
-
-                    // Update the database with the new value
-                    updateCellValue(field, id, newValue);
-
-                    cell.innerHTML = newValue;
-                });
-
-                input.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
-                        input.blur();
-                    }
-                });
-            });
-        });
-
-        // Function to update cell value in the database via AJAX
-        function updateCellValue(field, id, value) {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'update_cell.php', true);
-            xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            xhr.send(`field=${field}&id=${id}&value=${encodeURIComponent(value)}`);
+                echo '>' . $page . '</a> ';
+            }
+            echo '</div>';
+        } else {
+            echo "Error: " . mysqli_error($connect);
         }
-    });
-</script>
-</div>
+
+        // Close the database connection
+        mysqli_close($connect);
+        ?>
+
+        <!-- JavaScript for making table cells editable on double-click -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const cells = document.querySelectorAll('.editable-cell');
+
+                cells.forEach(cell => {
+                    cell.addEventListener('dblclick', () => {
+                        const text = cell.innerText.trim();
+                        let inputType = 'text';
+                        if (cell.classList.contains('editable-date')) {
+                            inputType = 'date';
+                        } else if (cell.classList.contains('editable-time')) {
+                            inputType = 'time';
+                        }
+                        cell.innerHTML = `<input type="${inputType}" class="editable-input" value="${text}">`;
+                        const input = cell.querySelector('.editable-input');
+                        input.focus();
+
+                        input.addEventListener('blur', () => {
+                            const newValue = input.value.trim();
+                            const field = cell.getAttribute('data-field');
+                            const id = cell.getAttribute('data-id');
+
+                            // Update the database with the new value
+                            updateCellValue(field, id, newValue);
+
+                            cell.innerHTML = newValue;
+                        });
+
+                        input.addEventListener('keydown', (event) => {
+                            if (event.key === 'Enter') {
+                                input.blur();
+                            }
+                        });
+                    });
+                });
+
+                // Function to update cell value in the database via AJAX
+                function updateCellValue(field, id, value) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'update_cell.php', true);
+                    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                    xhr.send(`field=${field}&id=${id}&value=${encodeURIComponent(value)}`);
+                }
+            });
+        </script>
+    </div>
     <script>
         function getCurrentDateTime() {
             // Get the current datetime
@@ -522,7 +565,7 @@ mysqli_close($connect);
             xhttp.onload = function() {
                 alert("Request from ESP: " + this.responseText);
             }
-            xhttp.open("GET", "http://192.168.147.145/index.html?delay=" + delayMilliseconds, true);
+            xhttp.open("GET", "http://192.168.94.145/index.html", true);
             xhttp.send();
             alert('Successfully scheduled');
         }
@@ -558,6 +601,7 @@ mysqli_close($connect);
                 alert("Please enter Medicine Name, Medicine Type, Date, and Time.");
             }
         }
+
         function updateHiddenField() {
             var table = document.getElementById("medicineTable");
             var medicineArray = [];
@@ -588,53 +632,12 @@ mysqli_close($connect);
                 input.value = currentValue;
                 input.onblur = function() {
                     e.target.innerHTML = input.value;
-                    updateHiddenField();  // Update hidden field when editing is complete
+                    updateHiddenField(); // Update hidden field when editing is complete
                 };
                 e.target.innerHTML = '';
                 e.target.appendChild(input);
                 input.focus();
             }
-        });
-
-        //MULTIPLE ROTATION TIME FUNCTION
-        document.getElementById("addTime").addEventListener("click", function() {
-            var timeInputs = document.getElementById("timeInputs");
-            var newInput = document.createElement("input");
-            newInput.type = "time";
-            newInput.name = "time[]";
-            timeInputs.appendChild(newInput);
-        });
-
-        document.getElementById("saveTime").addEventListener("click", function() {
-            var delayArray = "";
-            var timeInputs = document.getElementsByName("time[]");
-            for (var i = 0; i < timeInputs.length; i++) {
-                if (timeInputs[i].value == '') {
-                    alert('Please complete all time input');
-                    delayArray = "";
-                    return;
-                }
-                let delayMilliseconds = calculateDelay(getCurrentDateTime(), timeInputs[i].value);
-                delayArray = delayArray + "," + delayMilliseconds;
-            }
-            console.log("Before rebuilt:");
-            var sliceddelay = delayArray.slice(1);
-            console.log(sliceddelay);
-            // Step 1: Split the string into individual values
-            var values = sliceddelay.split(",").map(Number);
-
-            // Step 2: Calculate differences between consecutive values
-            var differences = [];
-            for (var i = 0; i < values.length; i++) {
-                var diff = values[i] - (values[i - 1] || 0);
-                differences.push(diff);
-            }
-
-            // Step 3: Rebuild the comma-separated list with recalculated values
-            var rebuiltString = differences.join(",");
-            console.log("After rebuilt:");
-            console.log(rebuiltString);
-            executeRotation(rebuiltString);
         });
     </script>
 

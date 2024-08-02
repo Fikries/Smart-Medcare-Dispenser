@@ -25,7 +25,7 @@ if (
     isset($_POST['illness']) // Check if the payment status is set
 ) {
     // Establish connection to the database
-    $conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+    $conn = new mysqli("localhost", "root", "", "project2");
 
     // Prepare SQL statement to insert data into the database
     $sql = $conn->prepare("INSERT INTO patient (id, name, email, address, datein, timein,  illness) VALUES (NULL, ?, ?, ?, ?, ?, ?)");

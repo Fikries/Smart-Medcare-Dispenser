@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$conn = new mysqli("localhost", "root", "", "project2");
 // Compare year, month, day, hour, and minute
 $time = '2024-07-25 15:39:00';
 $now = new DateTime();

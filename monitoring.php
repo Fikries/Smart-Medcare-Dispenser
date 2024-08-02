@@ -83,6 +83,7 @@
         td {
             background-color: #f2f2f2;
         }
+
         .navbar {
             overflow: hidden;
             background-color: #333;
@@ -101,6 +102,7 @@
             background-color: #ddd;
             color: black;
         }
+        
 
         .navbar a.active {
             background-color: #04AA6D;
@@ -110,19 +112,19 @@
 </head>
 
 <body class="body">
-<div class="navbar">
-    <a href="register.php">Register</a>
-    <a href="list.php">Record</a>
-    <a href="interface.php">Admin</a>
-    <a href="monitoring.php">Monitor</a>
-</div>
+    <div class="navbar">
+        <a href="register.php">Register</a>
+        <a href="list.php">Record</a>
+        <a href="interface.php">Admin</a>
+        <a href="monitoring.php">Monitor</a>
+    </div>
 
     <h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN
             NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
 
 
     <?php
-    $conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+    $conn = new mysqli("localhost", "root", "", "project2");
     $elder = $conn->prepare("SELECT `id`, `eldername`, `email`, `medicine`, `consumptiondate`, `consumptiontime`, `caretakeremail`, `remark` FROM `medicine`");
     $elder->execute();
     $elder->store_result();
@@ -158,15 +160,34 @@
             } else {
                 $color = "green";
             }
+            $displayrow = true;
+            if (isset($_GET['status'])) {
+                if ($_GET['status'] == 'successful') {
+                    if ($color == "green") {
+                        $displayrow = true;
+                    } else {
+                        $displayrow = false;
+                    }
+                } else if ($_GET['status'] == 'unsuccessful') {
+                    if ($color == "red") {
+                        $displayrow = true;
+                    } else {
+                        $displayrow = false;
+                    }
+                }
+            }
+
+            if ($displayrow) {
         ?>
-            <tr>
-                <td><?php echo $medicinedata[$i]["name"] ?></td>
-                <td><?php echo $medicinedata[$i]["type"] ?></td>
-                <td><?php echo $medicinedata[$i]["date"] ?></td>
-                <td><?php echo $medicinedata[$i]["time"] ?></td>
-                <td style="background-color: <?php echo $color ?>;"></td>
-            </tr>
+                <tr>
+                    <td><?php echo $medicinedata[$i]["name"] ?></td>
+                    <td><?php echo $medicinedata[$i]["type"] ?></td>
+                    <td><?php echo $medicinedata[$i]["date"] ?></td>
+                    <td><?php echo $medicinedata[$i]["time"] ?></td>
+                    <td style="background-color: <?php echo $color ?>;"></td>
+                </tr>
         <?php
+            }
         }
         ?>
     </table>
@@ -178,4 +199,5 @@
         setTimeout(refresh, 5000);
     </script>
 </body>
+
 </html>

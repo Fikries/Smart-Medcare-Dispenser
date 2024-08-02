@@ -9,7 +9,7 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 // Start session
 session_start();
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$conn = new mysqli("localhost", "root", "", "project2");
 // Check if the admin is logged in
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
     // Display logout button
@@ -57,8 +57,6 @@ if (
     // If registered, proceed with the insertion of medicine information
 
     //DELETE DATA YANG DAH ADA
-    $delete = $conn->prepare("DELETE FROM medicine");
-    $delete->execute();
     $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark, caretakeremail) VALUES (NULL,?,?,?,?,?,?,?)");
     $sql->bind_param("ssssssi", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark'], $caretakeremail);
     $caretakeremail = 0;
@@ -392,7 +390,7 @@ if (isset($_POST['daterotatenew'])) {
     <div class="split right">
         <?php
         // Establish connection to the database
-        $connect = mysqli_connect("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+        $connect = mysqli_connect("localhost", "root", "", "project2");
 
         // Check the connection
         if (mysqli_connect_errno()) {

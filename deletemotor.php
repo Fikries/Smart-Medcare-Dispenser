@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$conn = new mysqli("localhost", "root", "", "project2");
 $deletemotorsql = $conn->prepare("DELETE FROM `motorspin` WHERE `id` = ?");
 $deletemotorsql->bind_param("i", $_GET['id']);
 $deletemotorsql->execute();

@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$conn = new mysqli("localhost", "root", "", "project2");
 
 //COMPARE IT, IF ANY IS SAME, SET IT TO ALREADY SPIN
 // 1. CHECK IT FIRST

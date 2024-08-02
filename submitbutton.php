@@ -4,7 +4,7 @@ $date = date('j/n/Y');
 $time = date('ga');
 $timeuppercase = strtoupper($time);
 
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$conn = new mysqli("localhost", "root", "", "project2");
 $insertsql = $conn->prepare("INSERT INTO `pushtime`(`id`, `date`, `time`) VALUES (NULL,?,?)");
 $insertsql->bind_param("ss", $date, $timeuppercase);
 

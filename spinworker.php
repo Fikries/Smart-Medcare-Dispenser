@@ -44,7 +44,7 @@ $now = new DateTime();
             xhttp.onload = function() {
                 window.location.reload();
             }
-            xhttp.open("GET", "http://192.168.94.145/index.html", true);
+            xhttp.open("GET", "http://192.168.70.145/index.html", true);
             xhttp.send();
         }
 

@@ -344,6 +344,7 @@ if (isset($_POST['daterotatenew'])) {
         </table>
 
         <button type="button" class="button" onclick="MyWindow=window.open('spinworker.php','MyWindow','width=600,height=300'); return false;">Start spin worker</button>
+        <button type="button" class="button" onclick="executeRotation()">Test spin</button>
 
         <form action="" method="post">
             <input type="hidden" name="medicine" id="medicine">
@@ -558,16 +559,6 @@ if (isset($_POST['daterotatenew'])) {
             return delayMilliseconds;
         }
 
-        function executeRotation(delayMilliseconds) {
-            const xhttp = new XMLHttpRequest();
-            xhttp.onload = function() {
-                alert("Request from ESP: " + this.responseText);
-            }
-            xhttp.open("GET", "http://192.168.94.145/index.html", true);
-            xhttp.send();
-            alert('Successfully scheduled');
-        }
-
         let medicineData = [];
 
         function addRow() {
@@ -598,6 +589,15 @@ if (isset($_POST['daterotatenew'])) {
             } else {
                 alert("Please enter Medicine Name, Medicine Type, Date, and Time.");
             }
+        }
+
+        function executeRotation() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                window.location.reload();
+            }
+            xhttp.open("GET", "http://192.168.70.145/index.html", true);
+            xhttp.send();
         }
 
         function updateHiddenField() {

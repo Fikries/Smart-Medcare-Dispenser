@@ -31,6 +31,8 @@ PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN NURSING HOME U
 5.paste it into mail password
 ![image](https://github.com/user-attachments/assets/190bc252-5bc8-43b5-9d90-2449f43d5656)
 
+whoever want detail of my fyp can contact me through 0182671172
+
 
 ## Project picture
 ![WhatsApp Image 2024-10-29 at 00 03 51_c078c0ca](https://github.com/user-attachments/assets/6b3320ec-c23b-469d-a459-3c3e9d010dbd)

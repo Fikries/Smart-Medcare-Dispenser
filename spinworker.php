@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$conn = new mysqli("localhost", "root", "", "elderainfik");
 // Compare year, month, day, hour, and minute
 $time = '2024-07-25 15:39:00';
 $now = new DateTime();
@@ -24,7 +24,7 @@ $now = new DateTime();
         </thead>
         <tbody>
             <?php
-            $displaymotorspinsql = $conn->prepare("SELECT `id`, `datetime`, `spinstate` FROM `motorspin`");
+            $displaymotorspinsql = $conn->prepare("SELECT `id`, `datetime`, `spinstate` FROM `motorspin` WHERE `spinstate` = 'false'");
             $displaymotorspinsql->execute();
             $displaymotorspinsql->store_result();
             $displaymotorspinsql->bind_result($idmotor, $datetimespinmotor, $statespinmotor);
@@ -44,7 +44,7 @@ $now = new DateTime();
             xhttp.onload = function() {
                 window.location.reload();
             }
-            xhttp.open("GET", "http://192.168.94.145/index.html", true);
+            xhttp.open("GET", "http://192.168.12.234/index.html", true);
             xhttp.send();
         }
 

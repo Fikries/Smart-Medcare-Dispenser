@@ -9,39 +9,31 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 // Start session
 session_start();
-$conn = new mysqli("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
-// Check if the admin is logged in
-if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    // Display logout button
-    echo '<form action="logout.php" method="post">';
-    echo '<button class="button" type="submit"><span class="glyphicon glyphicon-log-out"></span> Logout</button>';
-    echo '</form>';
+$conn = new mysqli("localhost", "root", "", "elderainfik");
+
+// Check if the admin is logged in, if not redirect to login page
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
+    exit();
 }
+// Prevent back button from accessing a cached page after logout
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 
 require 'vendor/autoload.php';
 if (
     isset($_POST['elder_name']) &&
     isset($_POST['elder_email']) &&
-    isset($_POST['medicine']) &&
-    isset($_POST['consumption_date']) &&
-    isset($_POST['consumption_time']) &&
+    isset($_POST['new_medicinename']) &&
+    isset($_POST['new_medicinetype']) &&
+    isset($_POST['new_datetime']) &&
     isset($_POST['remark'])
 ) {
-    $medicineData = json_decode($_POST['medicine'], true);
+    // $medicineData = json_decode($_POST['medicine'], true);
     $tableHtml = '<table>';
-    $tableHtml .= '<thead><tr><th>Medicine Name</th><th>Medicine Type</th><th>Date</th><th>Time</th></tr></thead>';
+    $tableHtml .= '<thead><tr><th>Medicine Name</th><th>Medicine Type</th><th>DateTime</th></tr></thead>';
     $tableHtml .= '<tbody>';
-
-    foreach ($medicineData as $medicine) {
-        $tableHtml .= '<tr>';
-        $tableHtml .= '<td>' . $medicine['name'] . '</td>';
-        $tableHtml .= '<td>' . $medicine['type'] . '</td>';
-        $tableHtml .= '<td>' . $medicine['date'] . '</td>';
-        $tableHtml .= '<td>' . $medicine['time'] . '</td>';
-        $tableHtml .= '</tr>';
-    }
-
-    $tableHtml .= '</tbody></table>';
 
     // Check if elder is registered
     $checkSql = $conn->prepare("SELECT * FROM patient WHERE email = ?");
@@ -55,14 +47,30 @@ if (
     }
 
     // If registered, proceed with the insertion of medicine information
+    $newMedicinenames = $_POST['new_medicinename'];
+    $newMedicinetypes = $_POST['new_medicinetype'];
+    $newDatetimes = $_POST['new_datetime'];
+    foreach ($newMedicinenames as $index => $name) {
+        $medicinename = htmlspecialchars($name);
+        $medicinetype = htmlspecialchars($newMedicinetypes[$index]);
+        $datetime = htmlspecialchars($newDatetimes[$index]);
+        $spinstate = "false";
+        $remarks = $_POST['remark'];
 
-    //DELETE DATA YANG DAH ADA
-    $delete = $conn->prepare("DELETE FROM medicine");
-    $delete->execute();
-    $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark, caretakeremail) VALUES (NULL,?,?,?,?,?,?,?)");
-    $sql->bind_param("ssssssi", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark'], $caretakeremail);
-    $caretakeremail = 0;
-    $sql->execute();
+        $tableHtml .= '<tr>';
+        $tableHtml .= '<td>' . $medicinename . '</td>';
+        $tableHtml .= '<td>' . $medicinetype . '</td>';
+        $tableHtml .= '<td>' . $datetime . '</td>';
+        $tableHtml .= '</tr>';
+
+        // Insert new record into the database
+        $insertmotorspinsql = $conn->prepare("INSERT INTO `motorspin` (`id`, `eldername`, `elderemail`, `medicinename`, `medicinetype`, `datetime`, `spinstate`, `remarks`) VALUES (NULL,?,?,?,?,?,?,?)");
+        $insertmotorspinsql->bind_param("sssssss", $_POST['elder_name'], $_POST['elder_email'], $medicinename, $medicinetype, $datetime, $spinstate, $remarks);
+        $insertmotorspinsql->execute();
+    }
+
+    $tableHtml .= '</tbody></table>';
+
     $mail = new PHPMailer(true);
     try {
         $receiveremail = $_POST['elder_email'];
@@ -73,7 +81,7 @@ if (
         $mail->Host       = 'smtp.gmail.com';                     //Set the SMTP server to send through
         $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
         $mail->Username   = 'fikries184@gmail.com';                     //SMTP username
-        $mail->Password   = 'xorbcraxrcpbmang';                               //SMTP password
+        $mail->Password   = 'fdvhejgdxfddoapo';                               //SMTP password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
         $mail->Port       = 465;                                    //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
 
@@ -87,13 +95,10 @@ if (
         $mail->Body = '<h3>' . $_POST['elder_name'] . '</h3>Thank you for your submission. Here are the details submitted:<br>' .
             'Email: ' . $_POST['elder_email'] . '<br>' .
             'Medicine details:<br>' . $tableHtml . '<br>' .
-            'Consumption date: ' . $_POST['consumption_date'] . '<br>' .
-            'Consumption time: ' . $_POST['consumption_time'] . '<br>' .
             'Remark: ' . $_POST['remark'];
 
         $mail->AltBody = $_POST['elder_name'] . ' Thank you for your submission. Here are the details submitted. ' .
-            'Email: ' . $_POST['elder_email'] . '. Medicine details: ' . $_POST['medicine'] . '. Consumption date: ' . $_POST['consumption_date'] .
-            '. Consumption time: ' . $_POST['consumption_time'] . '. Remark: ' . $_POST['remark'];
+            'Email: ' . $_POST['elder_email'] . '. Medicine details: ' . $_POST['medicine'] . '. Remark: ' . $_POST['remark'];
 
 
         $mail->send();
@@ -104,16 +109,6 @@ if (
 
     echo "<script>alert('Insert successfully, and notification is sent through email'); window.location='monitoring.php';</script>";
 }
-
-if (isset($_POST['daterotatenew'])) {
-    $addmotorspinsql = $conn->prepare("INSERT INTO `motorspin`(`id`, `datetime`, `spinstate`) VALUES (NULL,?,?)");
-    $addmotorspinsql->bind_param("ss", $datetimenew, $spinstate);
-    $dateformatnew = new DateTime($_POST['daterotatenew']);
-    $datetimenew = $dateformatnew->format("Y-m-d H:i:s");
-    $spinstate = "false";
-    $addmotorspinsql->execute();
-    echo "<script>alert('Insert successfully'); window.location='interface.php';</script>";
-}
 ?>
 
 <!DOCTYPE html>
@@ -121,453 +116,384 @@ if (isset($_POST['daterotatenew'])) {
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <title>Medicine Dispenser</title>
     <style>
+        /* Basic reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* General body styling */
         body {
-            font-family: Arial;
-            background-image: url('asset/background.jpg');
-            /* Specify the path to your image */
-            background-size: cover;
-            /* Cover the entire background */
-            background-position: center;
-            /* Center the background image */
-            background-repeat: no-repeat;
-            /* Do not repeat the background image */
-            color: rgb(9, 67, 4);
-
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
         }
 
-        .split {
-            height: 100%;
-            width: 50%;
-            position: fixed;
-            z-index: 1;
-            top: 0;
-            overflow-x: hidden;
-            padding-top: 20px;
-        }
+      
+         /* Navbar Styling */
+    .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 10px 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
 
-        .left {
-            left: 0;
-            background-image: url('asset/left.jpg');
-        }
+/* Logo or brand */
+.navbar .logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1877f2;
+    text-decoration: none;
+    margin-right: auto; /* Ensures the logo is aligned to the left */
+}
 
-        .right {
-            right: 0;
-            background-image: url('asset/right.jpg');
-        }
+/* Navigation links */
+.navbar .nav-links {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin-left: auto; /* Ensures the navigation links are aligned to the right */
+}
 
-        .button {
+.navbar .nav-links li {
+    margin-left: 20px;
+}
+
+.navbar .nav-links a {
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Hover effect on nav items */
+.navbar .nav-links a:hover {
+    background-color: #e4e6eb;
+    color: #1877f2;
+}
+
+.nav-links .active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+        /* Modern Logout Button */
+        .logout-btn {
             display: inline-block;
             padding: 10px 20px;
-            background-image: linear-gradient(to right, #ff007f, #ffcc00);
-            color: white;
-            border-radius: 9999px;
-            /* Large value to make it look like full rounded */
-            border: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
             font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
             text-decoration: none;
+            color: white;
+            background-color: #AEC6CF; /* Navy blue */
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logout-btn i {
+            margin-right: 8px;
         }
 
-        .highlighted {
-            background-color: yellow;
-            /* Set background color to yellow for highlighted text */
-            color: black;
-            /* Set font color to black for highlighted text */
-
+        .logout-btn:hover {
+            background-color: #e84118; /* Darker red on hover */
+            transform: translateY(-2px); /* Lifting effect */
         }
 
-        .font {
+        .logout-btn:active {
+            background-color: #c23616; /* Even darker red when clicked */
+            transform: translateY(0); /* Normal position when clicked */
+        }
+
+        
+        /* Main Heading */
+        h1 {
+            text-align: center;
+            font-size: 1.8em;
+            margin: 20px 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 1.6em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Form Styles */
+        form {
+            max-width: 770px; /* Limit the width for better readability */
+            background-image: url('asset/nursing.png');
+            background-repeat: no-repeat; /* Prevents multiple logos */
+            background-position: center center; /* Centers the logo */
+            background-size: contain; /* Adjusts the logo size to fit within the container */
+            margin: 0 auto; /* Center the form */
             background-color: white;
-            /* Set background color to yellow for highlighted text */
-            color: black;
-            /* Set font color to black for highlighted text */
-            border-radius: 20px;
-            /* Set border radius to create a curved highlight effect */
-            padding: 5px 10px;
-            /* Add padding for better appearance */
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        #remark {
-            width: 300px;
-            /* Adjust width as needed */
-            height: 100px;
-            /* Adjust height as needed */
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block; /* Display labels as block for better spacing */
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%; /* Full width for inputs */
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc; /* Light border */
+            border-radius: 5px; /* Rounded corners */
+            font-size: 1em; /* Font size */
+            transition: border-color 0.3s; /* Smooth transition for border color */
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #007bff; /* Change border color on focus */
+            outline: none; /* Remove default outline */
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 5px;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s; /* Smooth transition */
+        }
+        
+        .btn1 {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: #000080;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 5px;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s; /* Smooth transition */
+        }
+        
+        .btn1:hover {
+            background-color: #AEC6CF;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Table styles */
+        .table-container {
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         table {
-            width: 500px;
+            width: 100%;
             border-collapse: collapse;
+            margin: 0 auto; /* Center the table */
         }
 
-        table,
         th,
         td {
-            border: 1px solid black;
-            padding: 8px;
+            padding: 15px;
             text-align: left;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         th {
-            background-color: #f2f2f2;
+            background-color: #007bff;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
 
         td {
-            background-color: #f2f2f2;
-        }
-
-        .navbar {
-            overflow: hidden;
-            background-color: #333;
-        }
-
-        .navbar a {
-            float: left;
-            display: block;
-            color: #f2f2f2;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-
-        .navbar a:hover {
-            background-color: #ddd;
-            color: black;
-        }
-
-        .navbar a.active {
-            background-color: #04AA6D;
-            color: white;
-        }
-
-        .table-container {
-            width: 100%;
-            margin: 20px auto;
-            border-collapse: collapse;
-        }
-
-        .table-container th,
-        .table-container td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-
-        .table-container th {
-            background-color: #f2f2f2;
-        }
-
-        .table-container tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        .table-container tr:hover {
-            background-color: #ddd;
-        }
-
-        /* Style for pagination links */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            padding: 10px 0;
-        }
-
-        .pagination a {
-            color: black;
-            padding: 8px 16px;
-            text-decoration: none;
-            border: 1px solid #ddd;
-            margin: 0 2px;
-        }
-
-        .pagination a.active {
-            background-color: #04AA6D;
-            color: white;
-            border: 1px solid #04AA6D;
-        }
-
-        .pagination a:hover:not(.active) {
-            background-color: #ddd;
+            font-size: 1em;
         }
     </style>
 </head>
 
-<body class="body">
-    <div class="split left">
-        <div class="navbar">
-            <a href="register.php">Register</a>
-            <a href="list.php">Record</a>
-            <a href="interface.php">Admin</a>
-            <a href="monitoring.php">Monitor</a>
-        </div>
-        <h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN
-                NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
+<body>
+    <!-- Minimalist Navbar -->
+    <nav class="navbar">
+        <a href="interface.php" class="logo">Medicine Dispenser</a>
+        <ul class="nav-links">
+            <li><a href="register.php" class="active">Register</a></li>
+            <li><a href="list.php">Record</a></li>
+            <li><a href="interface.php">Admin</a></li>
+            <li><a href="monitoring.php">Monitor</a></li>
+            <li><a href="chart.php">Chart</a></li>
+            <!-- Modern Logout Button -->
+            <li><a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+        </ul>
+    </nav>
 
-        <label class="font" for="rotation_time">Setup rotation time:</label>
+    <h1>Medcare Admin Panel</h1>
+    <h2>Elder Information</h2>
 
-        <form id="timeForm" method="POST">
-            <div id="timeInputs">
-                <input type="datetime-local" name="daterotatenew" required>
-            </div>
-            <button type="submit" class="button" id="saveTime">Add rotation time</button>
-        </form>
-        <table id="medicineTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Rotation Datetime</th>
-                    <th>Rotated status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $displaymotorspinsql = $conn->prepare("SELECT `id`, `datetime`, `spinstate` FROM `motorspin`");
-                $displaymotorspinsql->execute();
-                $displaymotorspinsql->store_result();
-                $displaymotorspinsql->bind_result($idmotor, $datetimespinmotor, $statespinmotor);
-                while ($displaymotorspinsql->fetch()) {
-                ?>
-                    <tr>
-                        <td><?php echo $idmotor ?></td>
-                        <td><?php echo $datetimespinmotor ?></td>
-                        <td><?php echo $statespinmotor ?></td>
-                        <td><a href="editmotor.php?id=<?php echo $idmotor ?>">Edit</a> <a onclick="return confirm('Are you sure want to delete this motor spin schedule?')" href="deletemotor.php?id=<?php echo $idmotor ?>">Delete</a></td>
-                    </tr>
-                <?php } ?>
-            </tbody>
-        </table>
+    <form id="timeForm" method="POST">
+        <input type="hidden" name="medicine" id="medicine">
+        <label for="elder_name">Elder Name:</label>
+        <select id="elder_name" name="elder_name" required>
+            <option value="">Select Elder</option>
+            <?php
+            // Fetch elder names from the database
+            $elderSql = "SELECT name FROM patient";
+            $elderResult = $conn->query($elderSql);
+            
+            if ($elderResult->num_rows > 0) {
+                while ($row = $elderResult->fetch_assoc()) {
+                    echo '<option value="' . htmlspecialchars($row['name']) . '">' . htmlspecialchars($row['name']) . '</option>';
+                }
+            } else {
+                echo '<option value="">No elders available</option>';
+            }
+            ?>
+        </select>
 
-        <button type="button" class="button" onclick="MyWindow=window.open('spinworker.php','MyWindow','width=600,height=300'); return false;">Start spin worker</button>
+        <label for="elder_email">Elder Email:</label>
+        <input type="text" id="elder_email" name="elder_email" required>
 
-        <form action="" method="post">
-            <input type="hidden" name="medicine" id="medicine">
-            <h2><span class="highlighted">Elder Information</h2></span>
-            <label class="font" for="elder_name">Elder Name:</label>
-            <input type="text" id="elder_name" name="elder_name" required>
-            <br><br>
+        <label for="remark">Remarks:</label>
+        <textarea id="remark" name="remark" rows="4" placeholder="Optional"></textarea>
 
-            <label class="font" for="elder_email">Elder email:</label>
-            <input type="text" id="elder_email" name="elder_email" required>
-            <br><br>
-
-            <table id="medicineTable">
+        <button type="button" class="btn1" id="saveTime" onclick="addNewRowMotor()">Add Rotation Time</button>
+        
+        <div class="table-container">
+            <table id="motorTableBody">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>Medicine Name</th>
                         <th>Medicine Type</th>
-                        <th>Date</th>
-                        <th>Time</th>
+                        <th>Rotation Datetime</th>
+                        <th>Rotated Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Rows will be dynamically added here -->
+                    <?php
+                    $displaymotorspinsql = $conn->prepare("SELECT `id`, `medicinename`, `medicinetype`, `datetime`, `spinstate` FROM `motorspin`");
+                    $displaymotorspinsql->execute();
+                    $displaymotorspinsql->store_result();
+                    $displaymotorspinsql->bind_result($idmotor, $medicinename, $medicinetype, $datetimespinmotor, $statespinmotor);
+                    while ($displaymotorspinsql->fetch()) {
+                    ?>
+                        <tr>
+                            <td><?php echo $idmotor ?></td>
+                            <td><?php echo $medicinename ?></td>
+                            <td><?php echo $medicinetype ?></td>
+                            <td><?php echo $datetimespinmotor ?></td>
+                            <td><?php echo $statespinmotor ?></td>
+                            <td><a href="editmotor.php?id=<?php echo $idmotor ?>">Edit</a> <a onclick="return confirm('Are you sure want to delete this motor spin schedule?')" href="deletemotor.php?id=<?php echo $idmotor ?>">Delete</a></td>
+                        </tr>
+                    <?php } ?>
                 </tbody>
             </table>
             <br>
-            <button class="button" onclick="addRow()">Add Medicine</button><br><br>
-
-            <label class="font" for="consumption_date">Consumption Date:</label>
-            <input type="date" id="consumption_date" name="consumption_date" required>
-            <br><br>
-
-            <label class="font" for="consumption_time">Consumption Time:</label>
-            <input type="time" id="consumption_time" name="consumption_time" required>
-            <br><br>
-
-            <label class="font" for="remark">Remarks:</label>
-            <textarea id="remark" name="remark" rows="4" cols="50" placeholder="Optional"></textarea>
-            <br><br>
-
-            <button class="button" type="submit">Submit Medicine Info</button>
+            <button type="submit" class="btn">Submit</button>
         </form>
-    </div>
-    <div class="split right">
-        <?php
-        // Establish connection to the database
-        $connect = mysqli_connect("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
-
-        // Check the connection
-        if (mysqli_connect_errno()) {
-            die("Failed to connect to MySQL: " . mysqli_connect_error());
-        }
-
-        // Check if form is submitted
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-            $searchName = mysqli_real_escape_string($connect, $_POST['name']);
-        } else {
-            $searchName = '';
-        }
-
-        // Pagination logic
-        $records_per_page = 10; // Number of records to display per page
-        $current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-        $offset = ($current_page - 1) * $records_per_page;
-
-        // Query to count total records
-        $count_query = "SELECT COUNT(*) FROM patient WHERE name LIKE '%$searchName%'";
-        $count_result = mysqli_query($connect, $count_query);
-        $total_records = mysqli_fetch_array($count_result)[0];
-        $total_pages = ceil($total_records / $records_per_page);
-
-        // Query to fetch filtered resident data with pagination
-        $query = "SELECT id, name, email, illness FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
-        $result = mysqli_query($connect, $query);
-
-        if ($result) {
-            echo '<div class="table-container">';
-            echo '<div align="center">';
-            echo '<table border="2">
-    <tr>
-        <td><b>Resident ID</b></td>
-        <td><b>Elder Name</b></td>
-        <td><b>Email</b></td>
-        <td><b>Illness</b></td>
-    </tr>';
-
-            while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
-                echo '<tr>
-        <td>' . $row['id'] . '</td>
-        <td>' . $row['name'] . '</td>
-        <td>' . $row['email'] . '</td>
-        <td>' . $row['illness'] . '</td>
-        </tr>';
-            }
-
-            echo '</table>';
-            echo '</div>';
-            echo '</div>';
-
-            // Pagination links
-            echo '<div class="pagination">';
-            for ($page = 1; $page <= $total_pages; $page++) {
-                echo '<a href="?page=' . $page . '"';
-                if ($page == $current_page) {
-                    echo ' class="active"';
-                }
-                echo '>' . $page . '</a> ';
-            }
-            echo '</div>';
-        } else {
-            echo "Error: " . mysqli_error($connect);
-        }
-
-        // Close the database connection
-        mysqli_close($connect);
-        ?>
-
-        <!-- JavaScript for making table cells editable on double-click -->
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const cells = document.querySelectorAll('.editable-cell');
-
-                cells.forEach(cell => {
-                    cell.addEventListener('dblclick', () => {
-                        const text = cell.innerText.trim();
-                        let inputType = 'text';
-                        if (cell.classList.contains('editable-date')) {
-                            inputType = 'date';
-                        } else if (cell.classList.contains('editable-time')) {
-                            inputType = 'time';
-                        }
-                        cell.innerHTML = `<input type="${inputType}" class="editable-input" value="${text}">`;
-                        const input = cell.querySelector('.editable-input');
-                        input.focus();
-
-                        input.addEventListener('blur', () => {
-                            const newValue = input.value.trim();
-                            const field = cell.getAttribute('data-field');
-                            const id = cell.getAttribute('data-id');
-
-                            // Update the database with the new value
-                            updateCellValue(field, id, newValue);
-
-                            cell.innerHTML = newValue;
-                        });
-
-                        input.addEventListener('keydown', (event) => {
-                            if (event.key === 'Enter') {
-                                input.blur();
-                            }
-                        });
-                    });
-                });
-
-                // Function to update cell value in the database via AJAX
-                function updateCellValue(field, id, value) {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', 'update_cell.php', true);
-                    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-                    xhr.send(`field=${field}&id=${id}&value=${encodeURIComponent(value)}`);
-                }
-            });
-        </script>
-    </div>
+        <br>
+        <button type="button" class="btn1" onclick="MyWindow=window.open('spinworker.php','MyWindow','width=600,height=300'); return false;">Start spin worker</button>
+        <button type="button" class="btn1" onclick="executeRotation()">Test spin</button><br><br>
     <script>
-        function getCurrentDateTime() {
-            // Get the current datetime
-            let currentDate = new Date();
+        function addNewRowMotor() {
+            const tableBody = document.getElementById('motorTableBody');
 
-            // Format the date components
-            let year = currentDate.getFullYear();
-            let month = ('0' + (currentDate.getMonth() + 1)).slice(-2); // Months are zero based
-            let day = ('0' + currentDate.getDate()).slice(-2);
-            let hours = ('0' + currentDate.getHours()).slice(-2);
-            let minutes = ('0' + currentDate.getMinutes()).slice(-2);
-            let seconds = ('0' + currentDate.getSeconds()).slice(-2);
+            // Create a new row
+            const newRow = document.createElement('tr');
 
-            // Return the formatted datetime string
-            return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds;
+            // Add editable cells for the new row
+            newRow.innerHTML = `
+        <td>New</td>
+        <td><input type="text" name="new_medicinename[]" placeholder="Medicine Name" required></td>
+        <td><input type="text" name="new_medicinetype[]" placeholder="Medicine Type" required></td>
+        <td><input type="datetime-local" name="new_datetime[]" required></td>
+        <td>false</td>
+        <td><button type="button" onclick="removeRowMotor(this)">Remove</button></td>
+    `;
+
+            // Append the new row to the table
+            tableBody.appendChild(newRow);
         }
 
-        function calculateDelay(targetDatetime1, targetDatetime2) {
-            // Get the current date
-            var currentDate = new Date(getCurrentDateTime());
+        function removeRowMotor(button) {
+            const row = button.closest('tr');
+            row.remove();
+        }
 
-            // Time string
-            var timeString = targetDatetime2;
+        function addConsumptionFields() {
+            const container = document.getElementById('consumption-container');
 
-            // Split the time string into hours and minutes
-            var timeParts = timeString.split(':');
-            var hours = parseInt(timeParts[0], 10);
-            var minutes = parseInt(timeParts[1], 10);
+            const div = document.createElement('div');
+            div.className = 'consumption-group';
 
-            // Set the time on the current date
-            currentDate.setHours(hours);
-            currentDate.setMinutes(minutes);
-            currentDate.setSeconds(0);
+            div.innerHTML = `
+                <label class="font" for="consumption_date[]">Consumption Date:</label>
+                <input type="date" name="consumption_date[]" required>
+                <br><br>
+                <label class="font" for="consumption_time[]">Consumption Time:</label>
+                <input type="time" name="consumption_time[]" required>
+                <br><br>
+            `;
 
-            // Convert targetDatetime1 and targetDatetime2 to Date objects
-            let targetDate1 = new Date(targetDatetime1);
-            let targetDate2 = currentDate;
+            container.appendChild(div);
+        }
 
-            if (targetDate1 > targetDate2) {
-                alert('Entered date time is less than current time');
-                return 0;
+        function removeLastConsumptionFields() {
+            const container = document.getElementById('consumption-container');
+            const consumptionGroups = container.getElementsByClassName('consumption-group');
+
+            // Only remove if there is more than one set of fields
+            if (consumptionGroups.length > 1) {
+                container.removeChild(consumptionGroups[consumptionGroups.length - 1]);
             }
-
-            // Calculate the difference in milliseconds between targetDatetime1 and targetDatetime2
-            let delayMilliseconds = Math.abs(targetDate2.getTime() - targetDate1.getTime());
-
-            // Return the delay in milliseconds
-            return delayMilliseconds;
         }
 
-        function executeRotation(delayMilliseconds) {
+        function executeRotation() {
             const xhttp = new XMLHttpRequest();
             xhttp.onload = function() {
                 alert("Request from ESP: " + this.responseText);
             }
-            xhttp.open("GET", "http://192.168.94.145/index.html", true);
+            xhttp.open("GET", "http://192.168.12.234/index.html", true);
             xhttp.send();
-            alert('Successfully scheduled');
         }
 
         let medicineData = [];
@@ -640,6 +566,32 @@ if (isset($_POST['daterotatenew'])) {
             }
         });
     </script>
+    <script>
+    $(document).ready(function() {
+        $('#elder_name').on('input', function() {
+            var elderName = $(this).val();
+
+            if (elderName !== '') {
+                $.ajax({
+                    url: 'fetch_elder_email.php',
+                    method: 'POST',
+                    data: { elder_name: elderName },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            $('#elder_email').val(response.email);
+                        } else {
+                            $('#elder_email').val(''); // Clear email if no match found
+                        }
+                    }
+                });
+            } else {
+                $('#elder_email').val(''); // Clear email if name is cleared
+            }
+        });
+    });
+</script>
+
 
 </body>
 

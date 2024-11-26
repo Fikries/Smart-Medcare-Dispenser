@@ -1,102 +1,85 @@
+<?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+// Start session
+session_start();
+
+// Check if the admin is logged in, if not redirect to login page
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
+    exit();
+}
+// Prevent back button from accessing a cached page after logout
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+?>
 <!DOCTYPE html>
 <html>
 <head>
     <link rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        .navbar {
-            overflow: hidden;
-            background-color: #333;
-        }
-
-        .navbar a {
-            float: left;
-            display: block;
-            color: #f2f2f2;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-
-        .navbar a:hover {
-            background-color: #ddd;
-            color: black;
-        }
-
-        .dropdown {
-            float: left;
-            overflow: hidden;
-        }
-
-        .dropdown .dropbtn {
-            font-size: 16px;
-            border: none;
-            outline: none;
-            color: white;
-            padding: 14px 16px;
-            background-color: inherit;
-            font-family: inherit;
+        /* Basic reset */
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .navbar a:hover, .dropdown:hover .dropbtn {
-            background-color: #ddd;
-            color: black;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
-
-        .dropdown-content a {
-            float: none;
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            text-align: left;
-        }
-
-        .dropdown-content a:hover {
-            background-color: #ddd;
-        }
-
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        .navbar a.active {
-            background-color: #04AA6D;
-            color: white;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
         }
 
         .table-container {
             width: 100%;
-            margin: 20px auto;
+            background-image: url('asset/nursing.png');
+            background-repeat: no-repeat; /* Prevents multiple logos */
+            background-position: center; /* Centers the logo */
+            background-size: contain; /* Adjusts the logo size to fit within the container */
             border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden; /* Ensure border-radius is applied */
         }
 
-        .table-container th, .table-container td {
-            padding: 8px;
-            border: 1px solid #ddd;
+        table {
+            width: 100%;
+            border: 1px solid #ddd; /* Define the border style */
+            border-collapse: collapse; /* Ensure borders work properly */
+        }
+
+        th, td {
+            padding: 15px;
             text-align: left;
+            border-bottom: 1px solid #e0e0e0;
         }
 
-        .table-container th {
-            background-color: #f2f2f2;
+        th {
+            background-color: #007bff; /* Bootstrap primary color */
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
 
-        .table-container tr:nth-child(even) {
-            background-color: #f2f2f2;
+        tr:hover {
+            background-color: #f1f1f1; /* Light gray on hover */
         }
 
-        .table-container tr:hover {
-            background-color: #ddd;
+        tr:last-child td {
+            border-bottom: none; /* Remove border for the last row */
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            th, td {
+                padding: 10px;
+            }
         }
 
         /* Style for editable input */
@@ -104,6 +87,37 @@
             border: none;
             background-color: transparent;
             width: 100%;
+        }
+        
+        /* Modern Logout Button */
+        .logout-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: white;
+            background-color: #AEC6CF; /* Navy blue */
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logout-btn i {
+            margin-right: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: #e84118; /* Darker red on hover */
+            transform: translateY(-2px); /* Lifting effect */
+        }
+
+        .logout-btn:active {
+            background-color: #c23616; /* Even darker red when clicked */
+            transform: translateY(0); /* Normal position when clicked */
         }
 
         /* Style for pagination links */
@@ -122,41 +136,126 @@
         }
 
         .pagination a.active {
-            background-color: #04AA6D;
+            background-color: #007bff;
             color: white;
-            border: 1px solid #04AA6D;
+            border: 1px solid #007bff;
         }
 
         .pagination a:hover:not(.active) {
             background-color: #ddd;
         }
+
+        /* Minimalist Navbar like Facebook */
+.navbar {
+    display: flex;
+    justify-content: space-between; /* Adjust this to center the items */
+    align-items: center;
+    background-color: #ffffff;
+    padding: 10px 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Logo or brand */
+.navbar .logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1877f2;
+    text-decoration: none;
+    margin-right: auto; /* Ensures the logo is aligned to the left */
+}
+
+/* Navigation links */
+.navbar .nav-links {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin-left: auto; /* Aligns the links to the right */
+}
+
+.navbar .nav-links li {
+    margin-left: 20px;
+}
+
+.navbar .nav-links a {
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Hover effect on nav items */
+.navbar .nav-links a:hover {
+    background-color: #e4e6eb;
+    color: #1877f2;
+}
+
+        /* Style for search input */
+        .search-input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 200px; /* Adjust width as needed */
+            transition: border-color 0.3s;
+        }
+
+        /* Style for search button */
+        .search-button {
+            padding: 10px 15px;
+            border: 1px solid #007bff;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            margin-left: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        /* Hover effect for search button */
+        .search-button:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        /* Focus effect for search input */
+        .search-input:focus {
+            border-color: #007bff;
+            outline: none; /* Remove default outline */
+        }
     </style>
 </head>
 <body>
-<div class="navbar">
-    <a href="register.php">Register</a>
-    <div class="dropdown">
-    <button class="dropbtn">Record</button>
-    <div class="dropdown-content">
-      <a href="list.php">Date In</a>
-      <a href="dateout.php">Date Out</a>
-    </div>
-  </div> 
-    <a href="interface.php">Admin</a>
-    <a href="monitoring.php">Monitor</a>
-</div>
-<h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
+<nav class="navbar">
+    <a href="interface.php" class="logo">Medicine Dispenser</a>
+    <ul class="nav-links">
+        <li><a href="register.php" class="active">Register</a></li>
+        <li><a href="list.php">Record</a></li>
+        <li><a href="interface.php">Admin</a></li>
+        <li><a href="monitoring.php">Monitor</a></li>
+        <li><a href="chart.php">Chart</a></li>
+        <!-- Modern Logout Button -->
+            <li><a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+    </ul>
+</nav>
+<h1></h1><br><br>
+<h1 align="center">RECORD ELDER</h1><br><br>
 <div class="filter-container">
     <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
-        <label for="name"><div align=center>Elder Name:</label>
-        <input type="text" id="name" name="name" value="<?php echo isset($_POST['name']) ? $_POST['name'] : ''; ?>">
-        <button type="submit" class="filter">Search</button></div>
+            <p style="text-align: center; font-family: Arial, sans-serif;">Elder Name:
+        <input type="text" id="name" name="name" value="<?php echo isset($_POST['name']) ? $_POST['name'] : ''; ?>" class="search-input">
+        <button type="submit" class="search-button">Search</button></p>
     </form>
 </div>
 
 <?php
 // Establish connection to the database
-$connect = mysqli_connect("localhost", "fikriainfyp", "mPIDZ.y73lNRg)Ew", "elderainfik");
+$connect = mysqli_connect("localhost", "root", "", "elderainfik");
 
 // Check the connection
 if (mysqli_connect_errno()) {
@@ -188,15 +287,15 @@ $result = mysqli_query($connect, $query);
 if ($result) {
     echo '<div class="table-container">';
     echo '<div align="center">';
-    echo '<table border="2">
+    echo '<table>
     <tr>
-        <td><b>Resident ID</b></td>
-        <td><b>Elder Name</b></td>
-        <td><b>Email</b></td>
-        <td><b>Address</b></td>
-        <td><b>Date In</b></td>
-        <td><b>Time In</b></td>
-        <td><b>Illness</b></td>
+        <th>Resident ID</th>
+        <th>Elder Name</th>
+        <th>Email</th>
+        <th>Address</th>
+        <th>Date In</th>
+        <th>Time In</th>
+        <th>Illness</th>
     </tr>';
 
     while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {

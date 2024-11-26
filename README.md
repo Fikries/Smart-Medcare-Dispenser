@@ -29,3 +29,8 @@ PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN NURSING HOME U
 4.CONFIGURE UNTUILL YOU GET THE CODE THEN PASTE IT INTO THE CODING
 ![image](https://github.com/user-attachments/assets/29b8539b-efae-4469-9b09-5c093912f332)
 
+## Project picture
+![WhatsApp Image 2024-10-29 at 00 03 51_c078c0ca](https://github.com/user-attachments/assets/6b3320ec-c23b-469d-a459-3c3e9d010dbd)
+
+
+

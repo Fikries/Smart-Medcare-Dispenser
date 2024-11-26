@@ -11,7 +11,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $remark = $_POST['remark'];
 
     // Database connection
+<<<<<<< HEAD
     $conn = new mysqli("localhost", "root", "", "elderainfik");
+=======
+    $conn = new mysqli("localhost", "root", "", "project2");
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 
     // Check connection
     if ($conn->connect_error) {

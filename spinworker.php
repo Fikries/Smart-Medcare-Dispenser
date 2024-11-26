@@ -1,5 +1,9 @@
 <?php
+<<<<<<< HEAD
 $conn = new mysqli("localhost", "root", "", "elderainfik");
+=======
+$conn = new mysqli("localhost", "root", "", "project2");
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 // Compare year, month, day, hour, and minute
 $time = '2024-07-25 15:39:00';
 $now = new DateTime();
@@ -44,7 +48,11 @@ $now = new DateTime();
             xhttp.onload = function() {
                 window.location.reload();
             }
+<<<<<<< HEAD
             xhttp.open("GET", "http://192.168.12.234/index.html", true);
+=======
+            xhttp.open("GET", "http://192.168.70.145/index.html", true);
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
             xhttp.send();
         }
 

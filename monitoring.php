@@ -222,7 +222,16 @@ header("Pragma: no-cache");
         }
 
         td {
+<<<<<<< HEAD
             font-size: 1em;
+=======
+            background-color: #f2f2f2;
+        }
+
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
         }
 
         td:nth-child(5) {
@@ -230,12 +239,20 @@ header("Pragma: no-cache");
             width: 20px;
         }
 
+<<<<<<< HEAD
         /* Responsive Design */
         @media (max-width: 768px) {
             .navbar {
                 flex-direction: column;
                 align-items: flex-start;
             }
+=======
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 
             .nav-links {
                 flex-direction: column;
@@ -253,6 +270,7 @@ header("Pragma: no-cache");
     </style>
 </head>
 
+<<<<<<< HEAD
 <body>
     <!-- Minimalist Navbar -->
     <nav class="navbar">
@@ -273,15 +291,41 @@ header("Pragma: no-cache");
             <li><a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
         </ul>
     </nav>
+=======
+<body class="body">
+    <div class="navbar">
+        <a href="register.php">Register</a>
+        <a href="list.php">Record</a>
+        <a href="interface.php">Admin</a>
+        <a href="monitoring.php">Monitor</a>
+    </div>
+
+    <h1><span class="highlighted">PERSONAL MEDICINE DISPENSER WITH NOTIFICATION FOR ELDERLY CARE IN
+            NURSING HOME USING ESP32 INTERGRATED WITH MYSQL DATABASE</h1></span>
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 
     <h1>Medcare Medication Log</h1>
 
     <?php
+<<<<<<< HEAD
     $conn = new mysqli("localhost", "root", "", "elderainfik");
+=======
+    $conn = new mysqli("localhost", "root", "", "project2");
+    $elder = $conn->prepare("SELECT `id`, `eldername`, `email`, `medicine`, `consumptiondate`, `consumptiontime`, `caretakeremail`, `remark` FROM `medicine`");
+    $elder->execute();
+    $elder->store_result();
+    if ($elder->num_rows < 1) {
+        echo "No data";
+        die();
+    }
+    $elder->bind_result($id, $eldername, $email, $medicine, $compdate, $comptime, $caretaker, $remark);
+    $elder->fetch();
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 
     $medicinestatus = $conn->prepare("SELECT `id`, `date` FROM `pushtime` WHERE `date` >= ? AND HOUR(`date`) = HOUR(?) AND DATE(`date`) = DATE(?)");
     $medicinestatus->bind_param("sss", $eachdatetime, $eachdatetime, $eachdatetime);
     ?>
+<<<<<<< HEAD
 
     <table id="motorTableBody">
         <thead>
@@ -317,6 +361,58 @@ header("Pragma: no-cache");
         </tr>
             <?php } ?>
         </tbody>
+=======
+    <h3><?php echo $eldername ?></h3>
+    <table>
+        <tr>
+            <th>Medicine</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+        </tr>
+        <?php
+        for ($i = 0; $i < count($medicinedata); $i++) {
+            $eachdate = $medicinedata[$i]["date"];
+            $eachtime = $medicinedata[$i]["time"];
+            $medicinestatus->execute();
+            $medicinestatus->store_result();
+            if ($medicinestatus->num_rows < 1) {
+                $color = "red";
+            } else {
+                $color = "green";
+            }
+            $displayrow = true;
+            if (isset($_GET['status'])) {
+                if ($_GET['status'] == 'successful') {
+                    if ($color == "green") {
+                        $displayrow = true;
+                    } else {
+                        $displayrow = false;
+                    }
+                } else if ($_GET['status'] == 'unsuccessful') {
+                    if ($color == "red") {
+                        $displayrow = true;
+                    } else {
+                        $displayrow = false;
+                    }
+                }
+            }
+
+            if ($displayrow) {
+        ?>
+                <tr>
+                    <td><?php echo $medicinedata[$i]["name"] ?></td>
+                    <td><?php echo $medicinedata[$i]["type"] ?></td>
+                    <td><?php echo $medicinedata[$i]["date"] ?></td>
+                    <td><?php echo $medicinedata[$i]["time"] ?></td>
+                    <td style="background-color: <?php echo $color ?>;"></td>
+                </tr>
+        <?php
+            }
+        }
+        ?>
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
     </table>
 
     <script>
@@ -326,4 +422,9 @@ header("Pragma: no-cache");
         setTimeout(refresh, 5000);
     </script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+
+</html>
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5

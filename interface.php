@@ -9,12 +9,22 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 // Start session
 session_start();
+<<<<<<< HEAD
 $conn = new mysqli("localhost", "root", "", "elderainfik");
 
 // Check if the admin is logged in, if not redirect to login page
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: login.php");
     exit();
+=======
+$conn = new mysqli("localhost", "root", "", "project2");
+// Check if the admin is logged in
+if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+    // Display logout button
+    echo '<form action="logout.php" method="post">';
+    echo '<button class="button" type="submit"><span class="glyphicon glyphicon-log-out"></span> Logout</button>';
+    echo '</form>';
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 }
 // Prevent back button from accessing a cached page after logout
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -71,6 +81,14 @@ if (
 
     $tableHtml .= '</tbody></table>';
 
+<<<<<<< HEAD
+=======
+    //DELETE DATA YANG DAH ADA
+    $sql = $conn->prepare("INSERT INTO medicine(id, eldername, email, medicine, consumptiondate, consumptiontime, remark, caretakeremail) VALUES (NULL,?,?,?,?,?,?,?)");
+    $sql->bind_param("ssssssi", $_POST['elder_name'], $_POST['elder_email'], $_POST['medicine'], $_POST['consumption_date'], $_POST['consumption_time'], $_POST['remark'], $caretakeremail);
+    $caretakeremail = 0;
+    $sql->execute();
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
     $mail = new PHPMailer(true);
     try {
         $receiveremail = $_POST['elder_email'];
@@ -388,8 +406,13 @@ if (
             ?>
         </select>
 
+<<<<<<< HEAD
         <label for="elder_email">Elder Email:</label>
         <input type="text" id="elder_email" name="elder_email" required>
+=======
+        <button type="button" class="button" onclick="MyWindow=window.open('spinworker.php','MyWindow','width=600,height=300'); return false;">Start spin worker</button>
+        <button type="button" class="button" onclick="executeRotation()">Test spin</button>
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 
         <label for="remark">Remarks:</label>
         <textarea id="remark" name="remark" rows="4" placeholder="Optional"></textarea>
@@ -430,9 +453,134 @@ if (
             <br>
             <button type="submit" class="btn">Submit</button>
         </form>
+<<<<<<< HEAD
         <br>
         <button type="button" class="btn1" onclick="MyWindow=window.open('spinworker.php','MyWindow','width=600,height=300'); return false;">Start spin worker</button>
         <button type="button" class="btn1" onclick="executeRotation()">Test spin</button><br><br>
+=======
+    </div>
+    <div class="split right">
+        <?php
+        // Establish connection to the database
+        $connect = mysqli_connect("localhost", "root", "", "project2");
+
+        // Check the connection
+        if (mysqli_connect_errno()) {
+            die("Failed to connect to MySQL: " . mysqli_connect_error());
+        }
+
+        // Check if form is submitted
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $searchName = mysqli_real_escape_string($connect, $_POST['name']);
+        } else {
+            $searchName = '';
+        }
+
+        // Pagination logic
+        $records_per_page = 10; // Number of records to display per page
+        $current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+        $offset = ($current_page - 1) * $records_per_page;
+
+        // Query to count total records
+        $count_query = "SELECT COUNT(*) FROM patient WHERE name LIKE '%$searchName%'";
+        $count_result = mysqli_query($connect, $count_query);
+        $total_records = mysqli_fetch_array($count_result)[0];
+        $total_pages = ceil($total_records / $records_per_page);
+
+        // Query to fetch filtered resident data with pagination
+        $query = "SELECT id, name, email, illness FROM patient WHERE name LIKE '%$searchName%' ORDER BY id LIMIT $offset, $records_per_page";
+        $result = mysqli_query($connect, $query);
+
+        if ($result) {
+            echo '<div class="table-container">';
+            echo '<div align="center">';
+            echo '<table border="2">
+    <tr>
+        <td><b>Resident ID</b></td>
+        <td><b>Elder Name</b></td>
+        <td><b>Email</b></td>
+        <td><b>Illness</b></td>
+    </tr>';
+
+            while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+                echo '<tr>
+        <td>' . $row['id'] . '</td>
+        <td>' . $row['name'] . '</td>
+        <td>' . $row['email'] . '</td>
+        <td>' . $row['illness'] . '</td>
+        </tr>';
+            }
+
+            echo '</table>';
+            echo '</div>';
+            echo '</div>';
+
+            // Pagination links
+            echo '<div class="pagination">';
+            for ($page = 1; $page <= $total_pages; $page++) {
+                echo '<a href="?page=' . $page . '"';
+                if ($page == $current_page) {
+                    echo ' class="active"';
+                }
+                echo '>' . $page . '</a> ';
+            }
+            echo '</div>';
+        } else {
+            echo "Error: " . mysqli_error($connect);
+        }
+
+        // Close the database connection
+        mysqli_close($connect);
+        ?>
+
+        <!-- JavaScript for making table cells editable on double-click -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const cells = document.querySelectorAll('.editable-cell');
+
+                cells.forEach(cell => {
+                    cell.addEventListener('dblclick', () => {
+                        const text = cell.innerText.trim();
+                        let inputType = 'text';
+                        if (cell.classList.contains('editable-date')) {
+                            inputType = 'date';
+                        } else if (cell.classList.contains('editable-time')) {
+                            inputType = 'time';
+                        }
+                        cell.innerHTML = `<input type="${inputType}" class="editable-input" value="${text}">`;
+                        const input = cell.querySelector('.editable-input');
+                        input.focus();
+
+                        input.addEventListener('blur', () => {
+                            const newValue = input.value.trim();
+                            const field = cell.getAttribute('data-field');
+                            const id = cell.getAttribute('data-id');
+
+                            // Update the database with the new value
+                            updateCellValue(field, id, newValue);
+
+                            cell.innerHTML = newValue;
+                        });
+
+                        input.addEventListener('keydown', (event) => {
+                            if (event.key === 'Enter') {
+                                input.blur();
+                            }
+                        });
+                    });
+                });
+
+                // Function to update cell value in the database via AJAX
+                function updateCellValue(field, id, value) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'update_cell.php', true);
+                    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                    xhr.send(`field=${field}&id=${id}&value=${encodeURIComponent(value)}`);
+                }
+            });
+        </script>
+    </div>
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
     <script>
         function addNewRowMotor() {
             const tableBody = document.getElementById('motorTableBody');
@@ -487,6 +635,7 @@ if (
             }
         }
 
+<<<<<<< HEAD
         function executeRotation() {
             const xhttp = new XMLHttpRequest();
             xhttp.onload = function() {
@@ -496,6 +645,8 @@ if (
             xhttp.send();
         }
 
+=======
+>>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
         let medicineData = [];
 
         function addRow() {
@@ -526,6 +677,15 @@ if (
             } else {
                 alert("Please enter Medicine Name, Medicine Type, Date, and Time.");
             }
+        }
+
+        function executeRotation() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                window.location.reload();
+            }
+            xhttp.open("GET", "http://192.168.70.145/index.html", true);
+            xhttp.send();
         }
 
         function updateHiddenField() {

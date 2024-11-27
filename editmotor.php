@@ -1,9 +1,5 @@
 <?php
-<<<<<<< HEAD
 $conn = new mysqli("localhost", "root", "", "elderainfik");
-=======
-$conn = new mysqli("localhost", "root", "", "project2");
->>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 if (isset($_POST['daterotatenew']) && isset($_POST['id'])) {
     $addmotorspinsql = $conn->prepare("UPDATE `motorspin` SET `datetime` = ? WHERE `id` = ?");
     $addmotorspinsql->bind_param("si", $datetimenew, $_POST['id']);

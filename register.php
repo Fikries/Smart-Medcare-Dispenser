@@ -27,11 +27,7 @@ if (
     isset($_POST['illness']) // Check if the payment status is set
 ) {
     // Establish connection to the database
-<<<<<<< HEAD
     $conn = new mysqli("localhost", "root", "", "elderainfik");
-=======
-    $conn = new mysqli("localhost", "root", "", "project2");
->>>>>>> 18efd40711513c6e1deef57c6c172f4aa5f268e5
 
     // Check if the email already exists in the database
     $email = $_POST['email'];
